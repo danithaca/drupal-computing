@@ -333,6 +333,7 @@ public class DUtils {
      * @param obj
      * @return
      */
+    @Deprecated
     public String toJson(Object obj) {
         return getDefaultGson().toJson(obj);
     }
@@ -342,6 +343,7 @@ public class DUtils {
      * @param json
      * @return
      */
+    @Deprecated
     public Object fromJson(String json) {
         if (StringUtils.isEmpty(json)) {
             return null;
@@ -350,6 +352,7 @@ public class DUtils {
         return fromJson(element);
     }
 
+    @Deprecated
     private Object fromJson(JsonElement element) {
         if (element.isJsonNull()) {
             return null;
@@ -393,6 +396,7 @@ public class DUtils {
         return DUtils.getInstance().toJson(finalJson);
     }*/
 
+    @Deprecated
     public Gson getDefaultGson() {
         if (defaultGson == null) {
             defaultGson = new GsonBuilder().create();
@@ -556,42 +560,40 @@ public class DUtils {
      */
     public static class Drush {
 
-        /**
-         * @deprecated Should use drushCommand and drushSiteAlias instead.
-         */
-        @Deprecated
-        private String drushExec;
-
         private String drushCommand;
         private String drushSiteAlias;
 
         private Boolean computingEnabled;
 
+        /**
+         * This is the only initialization code. Need to specify drush command and siteAlias.
+         * Default site alias is @self.
+         *
+         * @param drushCommand drush executable command
+         * @param drushSiteAlias drush site alias
+         */
         public Drush (String drushCommand, String drushSiteAlias) {
             assert StringUtils.isNotBlank(drushCommand) && StringUtils.isNotBlank(drushSiteAlias);
+            // TODO: check "drush cc" and existence of computing module.
             this.drushCommand = drushCommand;
             this.drushSiteAlias = drushSiteAlias;
         }
 
-        @Deprecated
-        public Drush(String drushExec) {
-            assert StringUtils.isNotBlank(drushExec) : "Cannot initiate Drush with an empty Drush executable.";
-            //if (StringUtils.isBlank(drushExec)) {
-            //    throw new DRuntimeException("Cannot initiate Drush with an empty Drush executable.");
-            //}
-            this.drushExec = drushExec;
-            // TODO: check "drush cc" and existence of computing module.
-        }
-
+        /**
+         * Use settings in config.properties to setup drush environment.
+         */
         @Deprecated
         public Drush() {
-            this(new DConfig().getDrushExec());
+            this(DConfig.loadDefault().getDrushCommand(), DConfig.loadDefault().getDrushSiteAlias());
+            //this(new DConfig().getDrushExec());
         }
 
-
-        public String execute(String[] command) throws DSiteException {
-            return execute(command, null);
+        public static Drush loadDefault() {
+            // might need to check validity.
+            DConfig config = DConfig.loadDefault();
+            return new Drush(config.getDrushCommand(), config.getDrushSiteAlias());
         }
+
 
         /**
          * Execute Drush command, and returns STDOUT results.
@@ -606,56 +608,85 @@ public class DUtils {
          * some other IPC approaches: 1) Apache Camel, 2) /tmp files, 3) message queue
          * however, STDOUT is the simplest approach for now.
          *
-         * @param command The drush command to execute.
+         * @param command The drush command to execute, ignoring drush binary and site alias.
          * @param input Input stream, could be null.
          * @return STDOUT results.
          * @throws DSiteException
          */
         public String execute(String[] command, String input) throws DSiteException {
             try {
-                CommandLine cmdLine = CommandLine.parse(drushExec);
+                // initialize command line
+                CommandLine cmdLine = new CommandLine(drushCommand);
+                cmdLine.addArgument(drushSiteAlias);
+                //CommandLine cmdLine = CommandLine.parse(drushExec);
+
                 // 2nd parameter is crucial. without it, there would be escaping problems.
                 // false means we didn't escape the params and we want CommandLine to escape for us.
                 cmdLine.addArguments(command, false);
 
                 //System.out.println(cmdLine.toString());
-                return getInstance().executeShell(cmdLine, null, input);
+                String output = getInstance().executeShell(cmdLine, input);
+                return output;
 
             } catch (DSystemExecutionException e) {
                 throw new DSiteException("Cannot execute drush.", e);
             }
         }
 
+
+        public String execute(String[] command) throws DSiteException {
+            return execute(command, null);
+        }
+
+
         /**
          * Get Drush version.
-         * @return
+         *
+         * @return Drush version string
          * @throws DSiteException
          */
         public String getVersion() throws DSiteException {
-            return execute(new String[]{"version", "--pipe"}).trim();
+            try {
+                return execute(new String[]{"version", "--pipe"}).trim();
+            } catch (Exception e) {
+                throw new DSiteException("Cannot get drush version.", e);
+            }
         }
 
+        @Deprecated
         public String getDrushExec() {
-            return drushExec;
+            return getDrushString();
         }
+
+        public String getDrushString() {
+            return drushCommand + ' ' + drushSiteAlias;
+        }
+
 
         /**
          * Get Drupal core-status info.
          * @see "drush core-status"
          *
-         * @return
+         * @return Core status in Map<String, Object>.
          * @throws DSiteException
          */
-        public Properties getCoreStatus() throws DSiteException {
-            Properties coreStatus = new Properties();
+        public Map<String, Object> getCoreStatus() throws DSiteException {
+            Map<String, Object> coreStatus = new HashMap<>();
             try {
-                coreStatus.load(new StringReader(execute(new String[]{"core-status", "--pipe"})));
-            } catch (IOException e) {
+
+                // execute drush status
+                String output = execute(new String[]{"core-status", "--pipe", "--format=json"});
+                Map<String, Object> jsonObject = (Map<String, Object>) Json.getInstance().fromJson(output);
+                coreStatus.putAll(jsonObject);
+
+            } catch (Exception e) {
                 getInstance().logger.severe("Error running drush core-status.");
-                e.printStackTrace();
+                throw new DSiteException("Cannot run drush core-status.", e);
             }
+
             return coreStatus;
         }
+
 
         /**
          * <p>Run any drupal code and get returns results in json.</p>
@@ -675,7 +706,7 @@ public class DUtils {
          */
         public String computingEval(String phpCode) throws DSiteException {
             if (!checkComputing()) {
-                String message = String.format("Drush command '%s' is invalid, or the 'computing' drush command not found at target Drupal site.", drushExec);
+                String message = String.format("Drush command '%s' is invalid, or the 'computing' drush command not found at target Drupal site.", this.getDrushString());
                 throw new DSiteException(message);
             }
             // this is the stub function to run any Drupal code.
@@ -694,7 +725,7 @@ public class DUtils {
          */
         public String computingCall(String[] params) throws DSiteException {
             if (!checkComputing()) {
-                String message = String.format("Drush command '%s' is invalid, or the 'computing' drush command not found at target Drupal site.", drushExec);
+                String message = String.format("Drush command '%s' is invalid, or the 'computing' drush command not found at target Drupal site.", this.getDrushString());
                 throw new DSiteException(message);
             }
             String[] command = {"computing-call", "--pipe"};
@@ -711,10 +742,6 @@ public class DUtils {
             return computingCall(params);
         }
 
-
-        public boolean checkComputing() {
-            return checkComputing(false);
-        }
 
         /**
          * Check if the "computing" module drush command is available. It doesn't check if the module itself is enabled or not.
@@ -733,8 +760,82 @@ public class DUtils {
             }
         }
 
+
+        public boolean checkComputing() {
+            return checkComputing(false);
+        }
+
     }
 
+
+    public static class Json {
+
+        // singleton design pattern
+        private static Json ourInstance = new Json();
+        private Json() {};
+        public static Json getInstance() {
+            return ourInstance;
+        }
+
+        // might use more sophisticated approach of GsonBuilder().
+        private Gson defaultGson = new Gson();
+
+        /**
+         * Encapsulate json object.
+         * @param obj the object to encode
+         * @return the json string
+         */
+        public String toJson(Object obj) {
+            return defaultGson.toJson(obj);
+        }
+
+        /**
+         * Parse a Json string into either a primitive, a list, or a map.
+         *
+         * @param json the json string
+         * @return json object in map usually.
+         */
+        public Object fromJson(String json) {
+            if (StringUtils.isEmpty(json)) {
+                return null;
+            }
+            JsonElement element = new JsonParser().parse(json);
+            return fromJson(element);
+        }
+
+        private Object fromJson(JsonElement element) {
+            if (element.isJsonNull()) {
+                return null;
+
+            } else if (element.isJsonPrimitive()) {
+                JsonPrimitive primitive = element.getAsJsonPrimitive();
+                if (primitive.isBoolean()) {
+                    return primitive.getAsBoolean();
+                } else if (primitive.isNumber()) {
+                    // attention: this returns gson.internal.LazilyParsedNumber, which has problem when use gson.toJson(obj) to serialize again.
+                    return primitive.getAsNumber();
+                } else if (primitive.isString()) {
+                    return primitive.getAsString();
+                }
+                throw new AssertionError("Invalid JsonPrimitive.");
+
+            } else if (element.isJsonArray()) {
+                List<Object> list = new ArrayList<Object>();
+                for (JsonElement e : element.getAsJsonArray()) {
+                    list.add(fromJson(e));
+                }
+                return list;
+
+            } else if (element.isJsonObject()) {
+                Map<String, Object> map = new HashMap<String, Object>();
+                for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+                    map.put(entry.getKey(), fromJson(entry.getValue()));
+                }
+                return map;
+            }
+            throw new AssertionError("Invalid JsonElement.");
+        }
+    }
 
 
     public static class Xmlrpc {
@@ -828,52 +929,6 @@ public class DUtils {
 
 
         @Test
-        public void testDrush() throws Exception {
-            Drush drush = new Drush("drush @local");
-            assertTrue(drush.checkComputing());
-            assertEquals("Expected drush version", "5.4", drush.getVersion());
-
-            // test drupal version
-            Properties coreStatus = drush.getCoreStatus();
-            //coreStatus.list(System.out);
-            assertTrue("Expected drupal version", coreStatus.getProperty("drupal_version").startsWith("7"));
-
-            // test execute php
-            String jsonStr = drush.computingEval("return node_load(1);").trim();
-            System.out.println(jsonStr);
-            assertTrue(jsonStr.startsWith("{") && jsonStr.endsWith("}"));
-
-            jsonStr = drush.computingEval("node_load(1);").trim();
-            System.out.println(jsonStr);
-            assertEquals("null", jsonStr);
-
-
-            // test computing call
-            Gson gson = new Gson();
-            String s2 = drush.computingCall(new String[]{"variable_get", gson.toJson("install_profile")});
-            //System.out.println(s2);
-            assertEquals("standard", gson.fromJson(s2, String.class));
-            String s3 = drush.computingCall("variable_get", "install_profile");
-            assertEquals("standard", gson.fromJson(s3, String.class));
-
-            // test check computing
-            Drush invalidDrush = new Drush("drush @xxx");
-            assertFalse(invalidDrush.checkComputing());
-            invalidDrush = new Drush("drush");
-            assertFalse(invalidDrush.checkComputing());
-        }
-
-        @Test
-        public void testLocalDrush() throws Exception {
-            // test local environment
-            Drush drush = new Drush("drush @local");
-            Properties coreStatus = drush.getCoreStatus();
-            assertTrue(coreStatus.getProperty("drupal_version").startsWith("7"));
-            assertEquals("/Users/danithaca/Development/drupal7", coreStatus.getProperty("drupal_root"));
-            assertEquals("/Users/danithaca/Development/drupal7", drush.execute(new String[]{"drupal-directory", "--local"}).trim());
-        }
-
-        @Test
         public void testMisc() {
             assertEquals(new Long(12L), DUtils.getInstance().getLong(new Long(12L)));
             assertEquals(new Long(5L), DUtils.getInstance().getLong("5"));
@@ -886,55 +941,6 @@ public class DUtils {
             System.out.println(DUtils.getInstance().getMachineId());
         }
 
-        @Test
-        public void testJson() {
-            Map<String, Object> json = new HashMap<String, Object>();
-            json.put("abc", 1);
-            json.put("hello", "world");
-            String jsonString = DUtils.getInstance().toJson(json);
-            Map<String, Object> json1 = (Map<String, Object>) DUtils.getInstance().fromJson(jsonString);
-            assertEquals(1, ((Number) json1.get("abc")).intValue());
-            assertEquals("world", (String) json1.get("hello"));
-
-            // produce error
-            //Gson gson = new Gson();
-            //Integer jsonObj = 1;
-            //String jsonStr = gson.toJson(jsonObj);
-            //System.out.println(jsonStr);
-            // the library doesn't have fromJson(obj), so the library has no problem
-            // we have a problem because we want to use fromJson(obj).
-            //System.out.println(gson.toJson(gson.fromJson(jsonStr)));
-
-
-            /*Map<String, Object> oldJson = new HashMap<String, Object>();
-            oldJson.put("hello", 1);
-            String oldJsonString = DUtils.getInstance().toJson(oldJson);
-            Map<String, Object> newJson = new HashMap<String, Object>();
-            newJson.put("hello", 1);
-            newJson.put("abc", "def");
-            String newJsonString = DUtils.getInstance().toJson(newJson);
-            assertEquals(newJsonString, DUtils.getInstance().appendJsonString(oldJsonString, "abc", "def"));*/
-        }
-
-        @Test
-        public void testLogger() {
-            Logger l = DUtils.getInstance().getPackageLogger();
-            assertTrue(l != null);
-            assertTrue(l.getUseParentHandlers());
-            assertEquals(0, l.getHandlers().length);
-
-            while (true) {
-                if (l.getParent() != null) {
-                    l = l.getParent();
-                } else {
-                    break;
-                }
-            }
-
-            // now l is the top level handler
-            assertEquals(1, l.getHandlers().length);
-            assertTrue(l.getHandlers()[0] instanceof ConsoleHandler);
-        }
 
         @Test
         public void testPhp() throws Exception {

@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.io.*;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -249,7 +250,7 @@ public class DConfig {
     }
 
     private Properties getDbPropertiesFromDrush(String db) throws DConfigException {
-        DUtils.Drush drush = new DUtils.Drush(this.getDrushExec());
+        DUtils.Drush drush = new DUtils.Drush(getDrushCommand(), getDrushSiteAlias());
         try {
             String dbPhp = "global $databases; return " + getDbPhp(db) + ";";
             String json = drush.computingEval(dbPhp);
@@ -347,10 +348,10 @@ public class DConfig {
 
         // or else, try drush site_path
         try {
-            DUtils.Drush drush = new DUtils.Drush(this.getDrushExec());
-            Properties coreStatus = drush.getCoreStatus();
-            theFile = new File(coreStatus.getProperty("drupal_root", "") + File.separator
-                    + coreStatus.getProperty("site_path", "") + File.separator + fileName);
+            DUtils.Drush drush = new DUtils.Drush(getDrushCommand(), getDrushSiteAlias());
+            Map<String, Object> coreStatus = drush.getCoreStatus();
+            theFile = new File((coreStatus.containsKey("drupal_root") ? (String) coreStatus.get("drupal_root") : "") + File.separator
+                    + (coreStatus.containsKey("site_path") ? (String) coreStatus.get("site_path") : "") + File.separator + fileName);
             if (theFile.exists()) {
                 return theFile;
             }
@@ -478,7 +479,7 @@ public class DConfig {
 
         // if still not set, try drush
         if (StringUtils.isBlank(drupalRoot)) {
-            DUtils.Drush drush = new DUtils.Drush(this.getDrushExec());
+            DUtils.Drush drush = new DUtils.Drush(getDrushCommand(), getDrushSiteAlias());
             try {
                 drupalRoot = drush.execute(new String[]{"drupal-directory", "--local"}).trim();
             } catch (DSiteException e) {}

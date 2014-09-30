@@ -24,12 +24,23 @@ public class DDrushSite extends DSite {
 
     private DUtils.Drush drush;
 
+    @Deprecated
     public DDrushSite(String drushExec) {
-        this.drush = new DUtils.Drush(drushExec);
+        //this.drush = new DUtils.Drush(drushExec);
+        this.drush = DUtils.Drush.loadDefault();
     }
 
+    @Deprecated
     public DDrushSite() {
-        this(null);
+        this((String) null);
+    }
+
+    public DDrushSite(DUtils.Drush drush) {
+        this.drush = drush;
+    }
+
+    public static DDrushSite loadDefault() {
+        return new DDrushSite(DUtils.Drush.loadDefault());
     }
 
     /**
@@ -57,11 +68,11 @@ public class DDrushSite extends DSite {
 
     @Override
     public String getDrupalVersion() throws DSiteException {
-        Properties coreStatus = drush.getCoreStatus();
+        Map<String, Object> coreStatus = drush.getCoreStatus();
         if (!coreStatus.containsKey("drupal_version")) {
             throw new DRuntimeException("Cannot get drupal version.");
         }
-        return coreStatus.getProperty("drupal_version");
+        return (String)coreStatus.get("drupal_version");
     }
 
     @Override
