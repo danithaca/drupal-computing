@@ -63,33 +63,41 @@ public class DUtilsTest {
         assertNotNull(drupalVersion);
         assertTrue("Expected drupal version", drupalVersion.startsWith("7"));
 
-        // test computing module
-        //assertTrue(drush.checkComputing());
+        // test computing-eval
+        String jsonStr = drush.computingEval("return node_load(1);").trim();
+        System.out.println(jsonStr);
+        assertTrue(jsonStr.startsWith("{") && jsonStr.endsWith("}"));
+        Map<String, Object> jsonObj = (Map<String, Object>) DUtils.Json.getInstance().fromJson(jsonStr);
+        String nidStr = (String) jsonObj.get("nid");
+        assertEquals("1", nidStr);
+        assertEquals(new Integer(1), new Integer(nidStr));
 
+        jsonStr = drush.computingEval("node_load(1);").trim();
+        System.out.println(jsonStr);
+        assertEquals("null", jsonStr);
 
-//        // test execute php
-//        String jsonStr = drush.computingEval("return node_load(1);").trim();
-//        System.out.println(jsonStr);
-//        assertTrue(jsonStr.startsWith("{") && jsonStr.endsWith("}"));
-//
-//        jsonStr = drush.computingEval("node_load(1);").trim();
-//        System.out.println(jsonStr);
-//        assertEquals("null", jsonStr);
+        // test computing call
+        String s2 = drush.computingCall(new String[]{"variable_get", DUtils.Json.getInstance().toJson("install_profile")});
+        System.out.println(s2);
+        assertEquals("standard", (String) DUtils.Json.getInstance().fromJson(s2));
+        String s3 = drush.computingCall("variable_get", "install_profile");
+        System.out.println(s3);
+        assertEquals("standard", DUtils.Json.getInstance().fromJson(s3));
 
-
-//        // test computing call
-//        Gson gson = new Gson();
-//        String s2 = drush.computingCall(new String[]{"variable_get", gson.toJson("install_profile")});
-//        //System.out.println(s2);
-//        assertEquals("standard", gson.fromJson(s2, String.class));
-//        String s3 = drush.computingCall("variable_get", "install_profile");
-//        assertEquals("standard", gson.fromJson(s3, String.class));
-//
-//        // test check computing
-//        Drush invalidDrush = new Drush("drush @xxx");
-//        assertFalse(invalidDrush.checkComputing());
-//        invalidDrush = new Drush("drush");
-//        assertFalse(invalidDrush.checkComputing());
+        // test exception
+        try {
+            drush.computingCall("hello");
+            assertTrue(false);
+        } catch (Exception e) {
+            assertTrue("Expected exception caught.", true);
+        }
+        try {
+            DUtils.Drush badDrush = new DUtils.Drush("drush", "@xxx");
+            badDrush.computingCall("variable_get", "install_profile");
+            assertTrue(false);
+        } catch (Exception e) {
+            assertTrue("Expected exception caught.", true);
+        }
     }
 
 //    @Test

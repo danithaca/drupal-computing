@@ -211,7 +211,7 @@ public class DUtils {
         executor.setExitValue(0);
 
         // handle timeout. default 2 minutes.
-        int timeout = Integer.getInteger(DConfig.loadDefault().getProperty("drupal.computing.exec.timeout", "120000"), 120000);
+        int timeout = new Integer(DConfig.loadDefault().getProperty("drupal.computing.exec.timeout", "120000"));
         ExecuteWatchdog watchdog = new ExecuteWatchdog(timeout);
         executor.setWatchdog(watchdog);
 
@@ -563,7 +563,7 @@ public class DUtils {
         private String drushCommand;
         private String drushSiteAlias;
 
-        private Boolean computingEnabled;
+//        private Boolean computingEnabled;
 
         /**
          * This is the only initialization code. Need to specify drush command and siteAlias.
@@ -579,14 +579,6 @@ public class DUtils {
             this.drushSiteAlias = drushSiteAlias;
         }
 
-        /**
-         * Use settings in config.properties to setup drush environment.
-         */
-        @Deprecated
-        public Drush() {
-            this(DConfig.loadDefault().getDrushCommand(), DConfig.loadDefault().getDrushSiteAlias());
-            //this(new DConfig().getDrushExec());
-        }
 
         public static Drush loadDefault() {
             // might need to check validity.
@@ -665,6 +657,7 @@ public class DUtils {
 
         /**
          * Get Drupal core-status info.
+         *
          * @see "drush core-status"
          *
          * @return Core status in Map<String, Object>.
@@ -705,13 +698,14 @@ public class DUtils {
          * @throws DSiteException
          */
         public String computingEval(String phpCode) throws DSiteException {
-            if (!checkComputing()) {
-                String message = String.format("Drush command '%s' is invalid, or the 'computing' drush command not found at target Drupal site.", this.getDrushString());
-                throw new DSiteException(message);
+            String result;
+            try {
+                result = execute(new String[] {"computing-eval", "--pipe", "-"}, phpCode);
+            } catch (Exception e) {
+                getInstance().logger.severe("Error executing PHP code through computing-eval: " + phpCode);
+                throw new DSiteException("Cannot execute computing-eval.", e);
             }
-            // this is the stub function to run any Drupal code.
-            String[] command = {"computing-eval", "--pipe", "-"};
-            return execute(command, phpCode);
+            return result;
         }
 
 
@@ -719,25 +713,35 @@ public class DUtils {
          * Call any Drupal functions and returns results in json.
          *
          * @param params First param is the function name; the rest are parameters in json.
-         *               Callers are responsible to wrap the params in json, but not responsible to escape them as command line args.
+         *   Callers are responsible to wrap the params in json, but not responsible to escape them as command line args.
          * @return Execution results in JSON.
          * @throws DSiteException
          */
         public String computingCall(String[] params) throws DSiteException {
-            if (!checkComputing()) {
-                String message = String.format("Drush command '%s' is invalid, or the 'computing' drush command not found at target Drupal site.", this.getDrushString());
-                throw new DSiteException(message);
+            String result;
+            try {
+                String[] args = {"computing-call", "--pipe"};
+                args = ArrayUtils.addAll(args, params);
+                result = execute(args);
+            } catch (Exception e) {
+                getInstance().logger.severe("Error executing function call through computing-call: " + ArrayUtils.toString(params));
+                throw new DSiteException("Cannot execute computing-call.", e);
             }
-            String[] command = {"computing-call", "--pipe"};
-            command = ArrayUtils.addAll(command, params);
-            return execute(command);
+            return result;
         }
 
+        /**
+         * Utility function to use with the first computingCall().
+         * @param function the name of the Drupal function to call.
+         * @param funcParams the parameters not encoded in JSON.
+         * @return Excution results in JSON.
+         * @throws DSiteException
+         */
         public String computingCall(String function, Object... funcParams) throws DSiteException {
             String[] params = new String[funcParams.length + 1];
             params[0] = function;
             for (int i = 0; i < funcParams.length; i ++) {
-                params[i + 1] = DUtils.getInstance().getDefaultGson().toJson(funcParams[i]);
+                params[i + 1] = DUtils.Json.getInstance().toJson(funcParams[i]);
             }
             return computingCall(params);
         }
@@ -747,27 +751,30 @@ public class DUtils {
          * Check if the "computing" module drush command is available. It doesn't check if the module itself is enabled or not.
          * @return true if computing* drush command is available, or false if not.
          */
-        public boolean checkComputing(boolean force) {
-            if (computingEnabled != null && !force) {
-                return computingEnabled;
-            }
-            try {
-                String[] command = {"help", "--pipe", "--filter=computing"};
-                String results = execute(command);
-                return computingEnabled = true; // if computing category is not found, then there'll be exception.
-            } catch (DSiteException e) {
-                return computingEnabled = false;
-            }
-        }
-
-
-        public boolean checkComputing() {
-            return checkComputing(false);
-        }
+//        public boolean checkComputing(boolean force) {
+//            if (computingEnabled != null && !force) {
+//                return computingEnabled;
+//            }
+//            try {
+//                String[] command = {"help", "--pipe", "--filter=computing"};
+//                String results = execute(command);
+//                return computingEnabled = true; // if computing category is not found, then there'll be exception.
+//            } catch (DSiteException e) {
+//                return computingEnabled = false;
+//            }
+//        }
+//
+//
+//        public boolean checkComputing() {
+//            return checkComputing(false);
+//        }
 
     }
 
 
+    /**
+     * Utility class for Json.
+     */
     public static class Json {
 
         // singleton design pattern
@@ -779,6 +786,7 @@ public class DUtils {
 
         // might use more sophisticated approach of GsonBuilder().
         private Gson defaultGson = new Gson();
+        private JsonParser defaultJsonParser = new JsonParser();
 
         /**
          * Encapsulate json object.
@@ -799,7 +807,7 @@ public class DUtils {
             if (StringUtils.isEmpty(json)) {
                 return null;
             }
-            JsonElement element = new JsonParser().parse(json);
+            JsonElement element = defaultJsonParser.parse(json);
             return fromJson(element);
         }
 
