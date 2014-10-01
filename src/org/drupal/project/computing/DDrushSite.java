@@ -4,14 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -50,6 +45,7 @@ public class DDrushSite extends DSite {
      *
      * @return DDatabase connection. Caller is responsible to close it.
      */
+    @Deprecated
     public DDatabase getDatabase() throws DSiteException {
         DConfig config = new DConfig();
         config.setProperty("drupal.drush", drush.getDrushExec());
@@ -62,57 +58,48 @@ public class DDrushSite extends DSite {
         }
     }
 
+
     public DUtils.Drush getDrush() {
         return drush;
     }
 
+
     @Override
     public String getDrupalVersion() throws DSiteException {
         Map<String, Object> coreStatus = drush.getCoreStatus();
-        if (!coreStatus.containsKey("drupal_version")) {
-            throw new DRuntimeException("Cannot get drupal version.");
+        if (!coreStatus.containsKey("drupal-version")) {
+            throw new DSiteException("Cannot get drupal version.");
         }
-        return (String)coreStatus.get("drupal_version");
+        try {
+            return (String) coreStatus.get("drupal-version");
+        } catch (ClassCastException e) {
+            throw new DSiteException(e);
+        }
     }
+
 
     @Override
     public Object variableGet(String name, Object defaultValue) throws DSiteException {
         // TODO: think about how to do it with "drush variable-get", and handle multiple variable cases
         // It might be impossible, for example: if we have "var", "var1", "var2", then using drush variable-get var
         // will give us all three values.
-        String[] command = {
-                "variable_get",
-                DUtils.getInstance().toJson(name),
-                DUtils.getInstance().toJson(defaultValue),
-        };
-
-        String result = drush.computingCall(command);
-
-        // this logic is not tested yet.
-        if (defaultValue != null) {
-            return DUtils.getInstance().getDefaultGson().fromJson(result, defaultValue.getClass());
-        } else {
-            // defaultValue == null
-            return DUtils.getInstance().getDefaultGson().fromJson(result, null);
-        }
+        String result = drush.computingCall(new String[] {"variable_get", DUtils.Json.getInstance().toJson(name), DUtils.Json.getInstance().toJson(defaultValue)});
+        return DUtils.Json.getInstance().fromJson(result);
     }
 
     @Override
     public void variableSet(String name, Object value) throws DSiteException {
-        String[] command = {
-                "variable_set",
-                DUtils.getInstance().toJson(name),
-                DUtils.getInstance().toJson(value),
-        };
         // there's no return value in drupal either.
-        drush.computingCall(command);
+        drush.computingCall(new String[]{"variable_set", DUtils.Json.getInstance().toJson(name), DUtils.Json.getInstance().toJson(value)});
     }
+
 
     @Override
     public long getTimestamp() throws DSiteException {
         String json = drush.computingCall(new String[]{"time"});
-        return DUtils.getInstance().getDefaultGson().fromJson(json, Long.class);
+        return DUtils.getInstance().getLong(DUtils.Json.getInstance().fromJson(json));
     }
+
 
     @Override
     public DRecord claimRecord(String appName) throws DSiteException {
@@ -120,6 +107,11 @@ public class DDrushSite extends DSite {
     }
 
     @Override
+    public void finishRecord(DRecord record) throws DSiteException {
+
+    }
+
+    @Override @Deprecated
     public List<DRecord> queryReadyRecords(String appName) throws DSiteException {
         String phpCode = String.format("return computing_query_active_records('%s');", appName);
         String json = drush.computingEval(phpCode);
@@ -184,14 +176,13 @@ public class DDrushSite extends DSite {
     @Override
     public long createRecord(DRecord record) throws DSiteException {
         assert !record.isSaved();
-        assert record.getApp() != null && record.getCommand() != null
-                && record.getApp().length() > 0 && record.getCommand().length() > 0;
+        assert record.getApplication() != null && record.getCommand() != null && record.getApplication().length() > 0 && record.getCommand().length() > 0;
 
         String[] command = {
                 "computing-create",
-                record.getApp(),
+                record.getApplication(),
                 record.getCommand(),
-                record.getDescription() == null ? "N/A" : record.getDescription(),
+                record.getLabel() == null ? "N/A" : record.getLabel(),
                 "-", // read from STDIN to handle long input/output json.
                 "--json",
                 "--pipe"
@@ -218,8 +209,8 @@ public class DDrushSite extends DSite {
     public boolean checkConnection() {
         try {
             String drushVersion = drush.getVersion();
-            if (drushVersion.substring(0, 1).compareTo("5") < 0) {
-                logger.severe("You need drush version 5+. Your version of drush: " + drushVersion);
+            if (drushVersion.substring(0, 1).compareTo("6") < 0) {
+                logger.severe("You need drush version 6 or higher. Your version of drush: " + drushVersion);
                 return false;
             }
             // after we check here, then let the super function check again.
@@ -228,103 +219,6 @@ public class DDrushSite extends DSite {
             logger.severe("Check connection error: " + e.getLocalizedMessage());
             return false;
         }
-    }
-
-
-    //////////////////////////// unit test ///////////////////////////////////
-
-    public static class UnitTest {
-
-        private DDrushSite site;
-
-        @Before
-        public void setUp() {
-            site = new DDrushSite("drush @mturk");
-        }
-
-        private DRecord createRecord() {
-            Map map = new HashMap();
-            map.put("app", "common");
-            map.put("command", "drush");
-            map.put("description", "test from drush " + RandomStringUtils.randomAlphanumeric(10));
-            map.put("id1", new Random().nextInt(10000));
-            map.put("string1", "hello,world");
-            return new DRecord(map);
-        }
-
-        @Test
-        public void testSave() throws DSiteException {
-            Logger logger = DUtils.getInstance().getPackageLogger();
-            logger.setLevel(Level.FINEST);
-
-            DRecord r0 = createRecord();
-            //System.out.println(r0.toJson());
-            long id = site.createRecord(r0);
-
-            DRecord r1 = site.loadRecord(id);
-            //System.out.println(r1.toString());
-            assertEquals(r0.getId1(), r1.getId1());
-        }
-
-        @Test
-        public void testLoad() throws DSiteException {
-            //DRecord r1 = site.loadRecord(6);
-            //System.out.println(r1.toString());
-            List<DRecord> records = site.queryReadyRecords("common");
-            for (DRecord r : records) {
-                //System.out.println(r.toString());
-            }
-        }
-
-        @Test
-        public void testUpdate() throws DSiteException {
-            DRecord r0 = createRecord();
-            assertTrue(!r0.isSaved());
-
-            long id = site.createRecord(r0);
-            DRecord r1 = site.loadRecord(id);
-            assertTrue(r1.isSaved());
-            assertTrue(r1.isActive());
-
-            r1.setStatus(DRecord.Status.RUNG);
-            r1.setControl(DRecord.Control.REDY);
-            r1.setMessage("Hello,world.");
-            r1.setId3(101L);
-            //r1.writeOutput("");   // output has problem for now.
-            site.updateRecord(r1);
-
-            DRecord r2 = site.loadRecord(id);
-            assertEquals(DRecord.Status.RUNG, r2.getStatus());
-            assertEquals(DRecord.Control.REDY, r2.getControl());
-            //assertEquals("", new String(r2.getOutput()));
-            assertEquals(101L, (long)r2.getId3());
-
-            r2.setString1("Hello, world");
-            r2.setStatus(DRecord.Status.OKOK);
-            site.updateRecordField(r2, "string1");
-            DRecord r3 = site.loadRecord(id);
-            assertEquals("Hello, world", r3.getString1());
-            // since we only update the field, status is still RUNG rather than OKOK.
-            assertEquals(DRecord.Status.RUNG, r3.getStatus());
-        }
-
-        @Test
-        public void testVariable() throws DSiteException {
-            // test string variables
-            site.variableSet("computing_test", "hello, world");
-            assertEquals("hello, world", site.variableGet("computing_test", ""));
-            assertEquals("N/A", site.variableGet("computing_test_1", "N/A"));
-
-            // test integer variables
-            site.variableSet("computing_test", 1);
-            assertEquals(1, site.variableGet("computing_test", 1));
-            assertEquals(2, site.variableGet("computing_test_1", 2));
-            site.variableSet("computing_test", 0);
-            assertEquals(0, site.variableGet("computing_test", 1));
-
-            site.getDrush().execute(new String[]{"vdel", "computing_test", "--exact", "--yes"});
-        }
-
     }
 
 }

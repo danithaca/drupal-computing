@@ -7,49 +7,29 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Database record for this Command.
- * This is the "boundary object" between DCommand and DApplication
+ * Maps to a Computing entity in Drupal.
+ * Services the "boundary object" between Drupal and Agent.
  */
-public class DRecord implements Comparable<DRecord> {
+public class DRecord {
 
     /**
      * Status of the record, usually set by the program. See computing.module too.
      */
     public static enum Status {
-        OKOK, // successful
-        FAIL, // failed (expected)
-        RUNG, // running
-        STOP, // forced stop
-        NRCG, // not recognized
-        INTR, // internal error, unexpected program error.
+        RDY, // Ready
+        SCF, // successful
+        FLD, // failed (expected)
+        RUN, // running
+        ABD, // Aborted, or Abandoned.
     }
 
-    /**
-     * Control how to execute the record, usually set by Drupal. See computing.module too.
-     */
-    public static enum Control {
-        REDY, // ready for pull execution.
-        CNCL, // cancel
-        REMT, // remote
-        CMLN, // record is created from command line push running mode.
-        CODE, // record is created from code, and pushed to computing_record.
-        //AAAA, // top priority
-    }
 
     // this variables can't change after construction.
-    /*private final Long id;
-    private final String app;
-    private final String command;
-    private final String description;
-    private final Long uid; // nullable, can't change during runtime.
-    private final Long nid; // nullable, can't change during runtime.
-    private final Long created;*/
-
     // remove the final decorator to facilitate json creation.
     private Long id;
-    private String app;
+    private String application;
     private String command;
-    private String description;
+    private String label;
     private Long uid; // nullable, can't change during runtime.
     private Long nid; // nullable, can't change during runtime.
     private Long created;
@@ -104,7 +84,7 @@ public class DRecord implements Comparable<DRecord> {
         assert map != null;
 
         // don't need to do assertion here. if map doesn't contain the key, the value is just null.
-        //assert map.containsKey("id") && map.containsKey("app") && map.containsKey("command") && map.containsKey("description")
+        //assert map.containsKey("id") && map.containsKey("application") && map.containsKey("command") && map.containsKey("label")
         //        && map.containsKey("uid") && map.containsKey("nid") && map.containsKey("created") && map.containsKey("input")
         //        && map.containsKey("output") && map.containsKey("id1") && map.containsKey("id2") && map.containsKey("number1")
         //        && map.containsKey("number2") && map.containsKey("string1") && map.containsKey("string2") && map.containsKey("status")
@@ -113,9 +93,9 @@ public class DRecord implements Comparable<DRecord> {
 
 
         this.id = DUtils.getInstance().getLong(map.get("id")); // if id is null, it means this is a dummy record.
-        this.app = (String) map.get("app");     // could be null for dummys, assert app != null;
+        this.application = (String) map.get("application");     // could be null for dummys, assert application != null;
         this.command = (String) map.get("command");    // could be null for dummys, assert command != null;
-        this.description = (String) map.get("description");   // note: even though this can be null, class type cast would still work.
+        this.label = (String) map.get("label");   // note: even though this can be null, class type cast would still work.
         this.uid = DUtils.getInstance().getLong(map.get("uid"));
         this.nid = DUtils.getInstance().getLong(map.get("nid"));
         this.created = DUtils.getInstance().getLong(map.get("created"));
@@ -153,7 +133,7 @@ public class DRecord implements Comparable<DRecord> {
 
         // post check string length. note that they could be null
         assert (status == null || status.length() == 4) && (control == null || control.length() == 4)
-                && (app == null || app.length() <= 50) && (command == null || command.length() <= 50
+                && (application == null || application.length() <= 50) && (command == null || command.length() <= 50
                 && (agent == null || agent.length() <= 20));
         // we don't check other length, which might get truncated.
     }
@@ -164,35 +144,13 @@ public class DRecord implements Comparable<DRecord> {
 
     public static DRecord create(String app, String command, String description, Long uid, Long nid, Long created) {
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("app", app);
+        map.put("application", app);
         map.put("command", command);
-        map.put("description", description);
+        map.put("label", description);
         map.put("uid", uid);
         map.put("nid", nid);
         map.put("created", created);
         return new DRecord(map);
-    }
-
-    /**
-     * The smaller the weight, created, or id, the smaller the record. Smaller record would get executed first.
-     *
-     * @param otherRecord
-     * @return
-     */
-    @Override
-    public int compareTo(DRecord otherRecord) {
-        // first, compare weight
-        int compareWeight = this.weight.compareTo(otherRecord.weight);
-        if (compareWeight != 0) {
-            return compareWeight;
-        }
-        // then compare created
-        int compareCreated = this.created.compareTo(otherRecord.created);
-        if (compareCreated != 0) {
-            return compareCreated;
-        }
-        // finally compare id.
-        return this.id.compareTo(otherRecord.id);
     }
 
     @Override
@@ -222,9 +180,9 @@ public class DRecord implements Comparable<DRecord> {
         Map<String, Object> map = new HashMap<String, Object>();
 
         map.put("id", id);
-        map.put("app", app);
+        map.put("application", application);
         map.put("command", command);
-        map.put("description", description);
+        map.put("label", label);
         map.put("uid", uid);
         map.put("nid", nid);
         map.put("created", created);
@@ -449,16 +407,6 @@ public class DRecord implements Comparable<DRecord> {
         assert this.status.length() == 4;
     }
 
-    public Control getControl() {
-        return control == null ? null : Control.valueOf(control);
-    }
-
-    public void setControl(Control control) {
-        assert control != null;
-        this.control = control.toString();
-        assert this.control.length() == 4;
-    }
-
     public String getMessage() {
         return message;
     }
@@ -512,8 +460,8 @@ public class DRecord implements Comparable<DRecord> {
         return id;
     }
 
-    public String getApp() {
-        return app;
+    public String getApplication() {
+        return application;
     }
 
     public String getCommand() {
@@ -527,8 +475,8 @@ public class DRecord implements Comparable<DRecord> {
         this.command = command;
     }
 
-    public String getDescription() {
-        return description;
+    public String getLabel() {
+        return label;
     }
 
     public Long getUid() {
@@ -571,8 +519,8 @@ public class DRecord implements Comparable<DRecord> {
         this.outputjson = outputjson;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     public void setCreated(Long created) {

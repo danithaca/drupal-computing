@@ -13,6 +13,11 @@ public class DServicesSite extends DSite {
     }
 
     @Override
+    public void finishRecord(DRecord record) throws DSiteException {
+
+    }
+
+    @Override
     public List<DRecord> queryReadyRecords(String appName) throws DSiteException {
         return null;
     }

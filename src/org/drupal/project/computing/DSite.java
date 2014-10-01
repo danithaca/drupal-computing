@@ -41,6 +41,15 @@ abstract public class DSite {
      */
     abstract public DRecord claimRecord(String appName) throws DSiteException;
 
+
+    /**
+     * After agent finishes computation, return the results to Drupal.
+     *
+     * @param record
+     * @throws DSiteException
+     */
+    abstract public void finishRecord(DRecord record) throws DSiteException;
+
     /**
      * The first active record for the application. Use this for the "first" running mode.
      * Sub-classes can use whatever logic to implement this method.

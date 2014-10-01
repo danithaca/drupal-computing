@@ -48,6 +48,9 @@ public class DSqlSite extends DSite {
     }
 
     @Override
+    public void finishRecord(DRecord record) throws DSiteException { }
+
+    @Override
     public List<DRecord> queryReadyRecords(String appName) throws DSiteException {
         List<DRecord> records = new ArrayList<DRecord>();
         List<Map<String, Object>> rows = database.query("SELECT * FROM {computing_record} WHERE status IS NULL and app = ?", appName);

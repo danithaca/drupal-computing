@@ -51,7 +51,7 @@ abstract public class DCommand implements Runnable, Callable<DRecord> {
         DRecord record = DRecord.create(application.getIdentifier());
         DCommand command = create(commandClass, application, record);
         record.setCommand(command.getIdentifier());
-        record.setDescription("Forged command: " + command.getIdentifier());
+        record.setLabel("Forged command: " + command.getIdentifier());
         record.setControl(DRecord.Control.CODE);   // mark that the record is created from code.
         try {
             record.setCreated(application.getDrupalSite().getTimestamp());

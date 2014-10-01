@@ -18,6 +18,7 @@ import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 import org.junit.Test;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -323,6 +324,8 @@ public class DUtils {
             return ((Float) value).longValue();
         } else if (Double.class.isInstance(value)) {
             return ((Double) value).longValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).longValue();
         } else {
             throw new IllegalArgumentException("Cannot parse value: " + value.toString());
         }
@@ -794,7 +797,11 @@ public class DUtils {
          * @return the json string
          */
         public String toJson(Object obj) {
-            return defaultGson.toJson(obj);
+            if (obj instanceof Number) {
+                return defaultGson.toJson(new BigDecimal(obj.toString()));
+            } else {
+                return defaultGson.toJson(obj);
+            }
         }
 
         /**
@@ -821,7 +828,10 @@ public class DUtils {
                     return primitive.getAsBoolean();
                 } else if (primitive.isNumber()) {
                     // attention: this returns gson.internal.LazilyParsedNumber, which has problem when use gson.toJson(obj) to serialize again.
+                    // LazilyParsedNumber is a subclass of Number.
                     return primitive.getAsNumber();
+                    // this is to avoid using LazilyParsedNumber
+                    //return new BigDecimal(primitive.getAsString());
                 } else if (primitive.isString()) {
                     return primitive.getAsString();
                 }
@@ -925,94 +935,6 @@ public class DUtils {
                 System.out.print(cookie.toExternalForm() + "; ");
             }
             System.out.println("");
-        }
-
-    }
-
-
-    /**
-     * Most of the test cases only run under linux.
-     */
-    public static class UnitTest {
-
-
-        @Test
-        public void testMisc() {
-            assertEquals(new Long(12L), DUtils.getInstance().getLong(new Long(12L)));
-            assertEquals(new Long(5L), DUtils.getInstance().getLong("5"));
-            assertEquals(new Long(100L), DUtils.getInstance().getLong(new Float(100.53)));
-
-            // test tostring
-            System.out.println(DUtils.getInstance().objectToString(new DConfig()));
-            System.out.println(DUtils.getInstance().objectToString(1));
-
-            System.out.println(DUtils.getInstance().getMachineId());
-        }
-
-
-        @Test
-        public void testPhp() throws Exception {
-            String results;
-            DConfig config = new DConfig();
-            assertTrue(StringUtils.isNotBlank(config.getPhpExec()));
-
-            Php php = new Php();
-
-            // System.out.println(DUtils.getInstance().executeShell("php -v"));
-
-            results = php.evaluate("<?php echo 'hello, world';");
-            assertEquals("hello, world", results.trim());
-            results = php.evaluate("<?php echo json_encode(100);");
-            assertEquals(new Integer(100), DUtils.getInstance().getDefaultGson().fromJson(results, Integer.class));
-
-            // try to get $databases from settings.php.
-            config.setProperty("drupal.drush", "drush @local");
-            File settingsFile = config.locateFile("settings.php");
-            String databasesCode = php.extractVariable(settingsFile, "$databases");
-            assertTrue(databasesCode.startsWith("$databases"));
-
-            // test serialization
-            byte[] serialized;
-            // serialized = php.serialize(new Integer[] {1, 3}))
-            serialized = php.serialize("hello, world");
-            //System.out.println(new String(serialized));
-            assertEquals("hello, world", php.unserialize(serialized, String.class));
-            assertEquals(new Integer(1), php.unserialize(php.serialize(1), Integer.class));
-        }
-
-        /**
-         * This method is not supposed to test anything. It's simply running to print out some stuff.
-         */
-        @Test
-        public void simplePrint() throws Exception {
-            DConfig config = new DConfig();
-            config.setProperty("drupal.drush", "drush @local");
-            File settingsFile = config.locateFile("settings.php");
-            //String settingsCode = DUtils.getInstance().readContent(new FileReader(settingsFile));
-            System.out.println("Settings.php: " + settingsFile.getAbsolutePath());
-
-            Php php = new Php(config.getPhpExec());
-            System.out.println(php.extractVariable(settingsFile, "$databases"));
-            //System.out.println(DUtils.getInstance().stripPhpComments(settingsCode));
-        }
-
-        @Test
-        public void testXmlrpc() throws Exception {
-            Xmlrpc xmlrpc = new Xmlrpc("http://rgb.knowsun.com/x");
-            //Xmlrpc xmlrpc = new Xmlrpc("http://d7dev1.localhost/xmlrpc");
-            Map result;
-            result = xmlrpc.connect();
-            assertTrue(((String)result.get("sessid")).length() > 0);
-
-            result = xmlrpc.login("test", "test");
-            assertTrue(result.size() > 0);
-            System.out.println(result);
-
-            result = (Map) xmlrpc.execute("node.retrieve", 1);
-            assertTrue(result.size() > 0);
-            System.out.println(result);
-
-            assertTrue(xmlrpc.logout());
         }
 
     }
