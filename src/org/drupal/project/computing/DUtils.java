@@ -336,55 +336,51 @@ public class DUtils {
      * @param obj
      * @return
      */
-    @Deprecated
-    public String toJson(Object obj) {
-        return getDefaultGson().toJson(obj);
-    }
+//    @Deprecated
+//    public String toJson(Object obj) {
+//        return getDefaultGson().toJson(obj);
+//    }
 
-    /**
-     * Parse a Json string into either a primitive, a list, or a map.
-     * @param json
-     * @return
-     */
-    @Deprecated
-    public Object fromJson(String json) {
-        if (StringUtils.isEmpty(json)) {
-            return null;
-        }
-        JsonElement element = new JsonParser().parse(json);
-        return fromJson(element);
-    }
 
-    @Deprecated
-    private Object fromJson(JsonElement element) {
-        if (element.isJsonNull()) {
-            return null;
-        } else if (element.isJsonPrimitive()) {
-            JsonPrimitive primitive = element.getAsJsonPrimitive();
-            if (primitive.isBoolean()) {
-                return primitive.getAsBoolean();
-            } else if (primitive.isNumber()) {
-                // attention: this returns gson.internal.LazilyParsedNumber, which has problem when use gson.toJson(obj) to serialize again.
-                return primitive.getAsNumber();
-            } else if (primitive.isString()) {
-                return primitive.getAsString();
-            }
-            throw new AssertionError("Invalid JsonPrimitive.");
-        } else if (element.isJsonArray()) {
-            List<Object> list = new ArrayList<Object>();
-            for (JsonElement e : element.getAsJsonArray()) {
-                list.add(fromJson(e));
-            }
-            return list;
-        } else if (element.isJsonObject()) {
-            Map<String, Object> map = new HashMap<String, Object>();
-            for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
-                map.put(entry.getKey(), fromJson(entry.getValue()));
-            }
-            return map;
-        }
-        throw new AssertionError("Invalid JsonElement.");
-    }
+//    @Deprecated
+//    public Object fromJson(String json) {
+//        if (StringUtils.isEmpty(json)) {
+//            return null;
+//        }
+//        JsonElement element = new JsonParser().parse(json);
+//        return fromJson(element);
+//    }
+
+//    @Deprecated
+//    private Object fromJson(JsonElement element) {
+//        if (element.isJsonNull()) {
+//            return null;
+//        } else if (element.isJsonPrimitive()) {
+//            JsonPrimitive primitive = element.getAsJsonPrimitive();
+//            if (primitive.isBoolean()) {
+//                return primitive.getAsBoolean();
+//            } else if (primitive.isNumber()) {
+//                // attention: this returns gson.internal.LazilyParsedNumber, which has problem when use gson.toJson(obj) to serialize again.
+//                return primitive.getAsNumber();
+//            } else if (primitive.isString()) {
+//                return primitive.getAsString();
+//            }
+//            throw new AssertionError("Invalid JsonPrimitive.");
+//        } else if (element.isJsonArray()) {
+//            List<Object> list = new ArrayList<Object>();
+//            for (JsonElement e : element.getAsJsonArray()) {
+//                list.add(fromJson(e));
+//            }
+//            return list;
+//        } else if (element.isJsonObject()) {
+//            Map<String, Object> map = new HashMap<String, Object>();
+//            for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+//                map.put(entry.getKey(), fromJson(entry.getValue()));
+//            }
+//            return map;
+//        }
+//        throw new AssertionError("Invalid JsonElement.");
+//    }
 
     // doesn't work
     /*public String appendJsonString(String oldJsonString, String key, Object extraJson) {
@@ -399,13 +395,13 @@ public class DUtils {
         return DUtils.getInstance().toJson(finalJson);
     }*/
 
-    @Deprecated
-    public Gson getDefaultGson() {
-        if (defaultGson == null) {
-            defaultGson = new GsonBuilder().create();
-        }
-        return defaultGson;
-    }
+//    @Deprecated
+//    public Gson getDefaultGson() {
+//        if (defaultGson == null) {
+//            defaultGson = new GsonBuilder().create();
+//        }
+//        return defaultGson;
+//    }
 
     public Properties loadProperties(String configString) {
         Properties config = new Properties();
@@ -469,7 +465,7 @@ public class DUtils {
          * @throws DSystemExecutionException
          */
         public byte[] serialize(Object value) throws DSystemExecutionException {
-            String json = DUtils.getInstance().getDefaultGson().toJson(value);
+            String json = DUtils.Json.getInstance().toJson(value);
             CommandLine commandLine = new CommandLine(phpExec);
             commandLine.addArgument("-E");
             // first decode json, and then serialize it. needs to escape
@@ -489,14 +485,14 @@ public class DUtils {
          * Unserialize a PHP serialized byte string into a Java object.
          */
         public Object unserialize(byte[] serializedBytes) throws DSystemExecutionException {
-            return DUtils.getInstance().fromJson(unserializeToJson(serializedBytes));
+            return DUtils.Json.getInstance().fromJson(unserializeToJson(serializedBytes));
         }
 
         /**
          * FIXME: toClass can't handle "Type" cases.
          */
         public <T> T unserialize(byte[] serializedBytes, Class<T> toClass) throws DSystemExecutionException {
-            return DUtils.getInstance().getDefaultGson().fromJson(unserializeToJson(serializedBytes), toClass);
+            return new Gson().fromJson(unserializeToJson(serializedBytes), toClass);
         }
 
 

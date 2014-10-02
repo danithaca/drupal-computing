@@ -58,9 +58,9 @@ abstract public class DSite {
      * @return One active record for processing or null if no record is found.
      * @deprecated Don't use this. Use getRecord() instead.
      */
-    public DRecord getNextRecord(String appName) throws DSiteException {
-        return queryReadyRecords(appName).get(0);
-    }
+//    public DRecord getNextRecord(String appName) throws DSiteException {
+//        return queryReadyRecords(appName).get(0);
+//    }
 
     /**
      * Active records are those without a "status" code. All handled records has a status code.
@@ -71,7 +71,7 @@ abstract public class DSite {
      * @param appName
      * @deprecated Don't use this. Use getRecord() instead.
      */
-    abstract public List<DRecord> queryReadyRecords(String appName) throws DSiteException;
+//    abstract public List<DRecord> queryReadyRecords(String appName) throws DSiteException;
 
     /**
      * Save the updated record in the database.

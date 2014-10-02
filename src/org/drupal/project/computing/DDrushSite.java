@@ -45,18 +45,18 @@ public class DDrushSite extends DSite {
      *
      * @return DDatabase connection. Caller is responsible to close it.
      */
-    @Deprecated
-    public DDatabase getDatabase() throws DSiteException {
-        DConfig config = new DConfig();
-        config.setProperty("drupal.drush", drush.getDrushExec());
-        try {
-            Properties dbProperties = config.getDbProperties();
-            DDatabase db = new DDatabase(dbProperties);
-            return db;
-        } catch (DConfigException e) {
-            throw new DSiteException("Cannot get database connection to Drupal with drush. Please read documentations.", e);
-        }
-    }
+//    @Deprecated
+//    public DDatabase getDatabase() throws DSiteException {
+//        DConfig config = new DConfig();
+//        config.setProperty("drupal.drush", drush.getDrushExec());
+//        try {
+//            Properties dbProperties = config.getDbProperties();
+//            DDatabase db = new DDatabase(dbProperties);
+//            return db;
+//        } catch (DConfigException e) {
+//            throw new DSiteException("Cannot get database connection to Drupal with drush. Please read documentations.", e);
+//        }
+//    }
 
 
     public DUtils.Drush getDrush() {
