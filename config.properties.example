@@ -1,0 +1,4 @@
+; This is the configurations for the Drupal computing agents
+
+; drush site alias to specify which Drupal installation the agent is going to access.
+drupal.computing.drush.site = @local

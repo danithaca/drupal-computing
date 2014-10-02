@@ -1,8 +1,6 @@
 package org.drupal.project.computing.test;
 
-import com.google.gson.Gson;
 import org.apache.commons.exec.CommandLine;
-import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.DConfig;
 import org.drupal.project.computing.DUtils;
 import org.junit.Test;
@@ -10,8 +8,6 @@ import org.junit.Test;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
 
@@ -143,6 +139,9 @@ public class DUtilsTest {
         Bindings json1 = (Bindings) DUtils.Json.getInstance().fromJson(jsonString);
         assertEquals(1, ((Number) json1.get("abc")).intValue());
         assertEquals("world", (String) json1.get("hello"));
+
+        Bindings json2 = DUtils.Json.getInstance().fromJsonObject(jsonString);
+        assertEquals("world", (String) json2.get("hello"));
 
         // produce error
         //Gson gson = new Gson();

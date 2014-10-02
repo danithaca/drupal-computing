@@ -2,8 +2,10 @@ package org.drupal.project.computing;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.lang.StringUtils;
 import org.drupal.project.computing.exception.DRuntimeException;
 import org.drupal.project.computing.exception.DSiteException;
 
@@ -22,21 +24,14 @@ public class DDrushSite extends DSite {
 
     private DUtils.Drush drush;
 
-    @Deprecated
-    public DDrushSite(String drushExec) {
-        //this.drush = new DUtils.Drush(drushExec);
-        this.drush = DUtils.Drush.loadDefault();
-    }
-
-    @Deprecated
-    public DDrushSite() {
-        this((String) null);
-    }
-
     public DDrushSite(DUtils.Drush drush) {
         this.drush = drush;
     }
 
+    /**
+     * Factory method. Create DDrushSite using default config.properties file.
+     * @return Default DDrushSite object.
+     */
     public static DDrushSite loadDefault() {
         return new DDrushSite(DUtils.Drush.loadDefault());
     }
@@ -86,27 +81,73 @@ public class DDrushSite extends DSite {
         // TODO: think about how to do it with "drush variable-get", and handle multiple variable cases
         // It might be impossible, for example: if we have "var", "var1", "var2", then using drush variable-get var
         // will give us all three values.
-        String result = drush.computingCall(new String[] {"variable_get", DUtils.Json.getInstance().toJson(name), DUtils.Json.getInstance().toJson(defaultValue)});
+        String result = drush.computingCall("variable_get", name, defaultValue);
         return DUtils.Json.getInstance().fromJson(result);
     }
 
     @Override
     public void variableSet(String name, Object value) throws DSiteException {
         // there's no return value in drupal either.
-        drush.computingCall(new String[]{"variable_set", DUtils.Json.getInstance().toJson(name), DUtils.Json.getInstance().toJson(value)});
+        drush.computingCall("variable_set", name, value);
     }
 
 
     @Override
     public long getTimestamp() throws DSiteException {
-        String json = drush.computingCall(new String[]{"time"});
+        String json = drush.computingCall("time");
         return DUtils.getInstance().getLong(DUtils.Json.getInstance().fromJson(json));
     }
 
 
     @Override
+    public long createRecord(DRecord record) throws DSiteException {
+        // this is not compile-time check, so don't use assert.
+        if (!record.isNew() || StringUtils.isBlank(record.getApplication()) || StringUtils.isBlank(record.getCommand())) {
+            throw new IllegalArgumentException("DRecord object is not valid.");
+        }
+
+        Bindings extraOptions = record.toBindings();
+        extraOptions.remove("id");
+        extraOptions.remove("application");
+        extraOptions.remove("command");
+        extraOptions.remove("label");
+        extraOptions.remove("input");
+
+        String jsonResult = drush.computingCall("computing_create",
+                record.getApplication(),
+                record.getCommand(),
+                StringUtils.isBlank(record.getLabel()) ? "Process " + record.getCommand() : record.getLabel(),
+                record.getInput(), // this will get encoded in JSON regardless of whether it's null or not.
+                // handle more data here.
+                extraOptions
+        );
+
+        try {
+            return DUtils.Json.getInstance().fromJson(jsonResult, Long.class);
+        } catch (JsonSyntaxException e) {
+            throw new DSiteException("Cannot parse JSON result: " + jsonResult, e);
+        }
+    }
+
+    @Override
+    public DRecord loadRecord(long id) throws DSiteException {
+        String jsonResult = drush.computingCall("computing_load", id);
+        try {
+            return DRecord.fromJson(jsonResult);
+        } catch (JsonSyntaxException | IllegalArgumentException e) {
+            throw new DSiteException("Cannot parse JSON result: " + jsonResult, e);
+        }
+    }
+
+
+    @Override
     public DRecord claimRecord(String appName) throws DSiteException {
-        return null;
+        String jsonResult = drush.computingCall("computing_claim",appName);
+        try {
+            return DRecord.fromJson(jsonResult);
+        } catch (JsonParseException | IllegalArgumentException e) {
+            throw new DSiteException("Cannot parse JSON result.", e);
+        }
     }
 
     @Override
@@ -174,37 +215,6 @@ public class DDrushSite extends DSite {
 //            // here we don't throw exception because if no field is changed, record is not updated either.
 //            logger.warning("Update record failure. Please check code.");
 //        }
-    }
-
-    @Override
-    public long createRecord(DRecord record) throws DSiteException {
-        assert record.isNew();
-        assert record.getApplication() != null && record.getCommand() != null && record.getApplication().length() > 0 && record.getCommand().length() > 0;
-
-        String[] command = {
-                "computing-create",
-                record.getApplication(),
-                record.getCommand(),
-                record.getLabel() == null ? "N/A" : record.getLabel(),
-                "-", // read from STDIN to handle long input/output json.
-                "--json",
-                "--pipe"
-        };
-
-        String result = drush.execute(command, record.toJson());
-        return DUtils.getInstance().getLong(result.trim());
-    }
-
-    @Override
-    public DRecord loadRecord(long id) throws DSiteException {
-        String phpCode = String.format("return computing_load_record(%d);", id);
-        String json = drush.computingEval(phpCode);
-
-        Gson gson = new GsonBuilder().create();
-        // attention: this could have precision errors: eg. float number wouldn't be very accurate!
-        // FIXME: if the record with the id does not exist, there would be errors.
-        DRecord record = gson.fromJson(json, DRecord.class);
-        return record;
     }
 
 

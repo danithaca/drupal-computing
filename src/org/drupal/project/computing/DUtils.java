@@ -857,6 +857,19 @@ public class DUtils {
             }
             throw new AssertionError("Invalid JsonElement.");
         }
+
+        /**
+         * @param json the Json string, can be either null or Json object.
+         * @return either null or a Json object in class Bindings.
+         */
+        public Bindings fromJsonObject(String json) throws JsonIOException, JsonParseException, JsonSyntaxException {
+            Object obj = fromJson(json);
+            if (obj == null) return null;
+            if (!(obj instanceof Bindings)) {
+                throw new JsonParseException("Not a JSON Object.");
+            }
+            return (Bindings) obj;
+        }
     }
 
 

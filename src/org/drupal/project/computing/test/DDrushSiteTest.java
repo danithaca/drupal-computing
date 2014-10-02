@@ -7,6 +7,8 @@ import org.drupal.project.computing.DUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -80,14 +82,31 @@ public class DDrushSiteTest {
 //        assertEquals(r0.getId1(), r1.getId1());
 //    }
 
-    //@Test
-    public void testLoad() throws DSiteException {
-        //DRecord r1 = site.loadRecord(6);
-        //System.out.println(r1.toString());
-//        List<DRecord> records = site.queryReadyRecords("common");
-//        for (DRecord r : records) {
-//            //System.out.println(r.toString());
-//        }
+
+    @Test
+    public void testRecord() throws DSiteException {
+        Bindings input = new SimpleBindings();
+        input.put("message", "hello, world");
+        input.put("test", 1);
+        DRecord record = new DRecord("default", "Echo", "Test Echo", input);
+        System.out.println("Created record: " + record.toJson());
+
+        long recordId = site.createRecord(record);
+        assertTrue(recordId > 0);
+
+        DRecord rebuild = site.loadRecord(recordId);
+        System.out.println("Reloaded record: " + rebuild.toJson());
+        assertEquals(record.getCommand(), rebuild.getCommand());
+        assertEquals((Long) recordId, rebuild.getId());
+        assertEquals(input.get("message"), rebuild.getInput().get("message"));
+        assertTrue(record.getCreated() > 0);
+
+        DRecord r2 = new DRecord("default", "Echo", "Test Echo", null);
+        r2.setMessage("test message");
+        long r2Id = site.createRecord(r2);
+        assertTrue (r2Id > 0);
+        DRecord r2r = site.loadRecord(r2Id);
+        assertEquals(r2.getMessage(), r2r.getMessage());
     }
 
     //@Test

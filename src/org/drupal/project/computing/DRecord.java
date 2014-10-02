@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.refactoring.typeCook.deductive.resolver.Binding;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
@@ -54,6 +56,19 @@ public class DRecord {
         // default constructor.
     }
 
+    public DRecord(String application, String command, String label, Bindings input) {
+        this();
+        assert StringUtils.isNotBlank(application) && StringUtils.isNotBlank(command) && StringUtils.isNotBlank(label);
+
+        this.setApplication(application);
+        this.setCommand(command);
+        this.setLabel(label);
+
+        if (input != null) {
+            this.setInput(input);
+        }
+    }
+
     /**
      * Factory method. Create a DRecord object from JSON string.
      * Required field in JSON: id, application, command
@@ -61,13 +76,13 @@ public class DRecord {
      * @param jsonString the JSON string to create the DRecord object.
      * @return the DRecord object.
      */
-    public static DRecord fromJson(String jsonString) throws JsonSyntaxException, JsonParseException, IllegalArgumentException {
+    public static DRecord fromJson(String jsonString) throws JsonParseException, JsonSyntaxException, IllegalArgumentException {
         DRecord record = new DRecord();
         DUtils utils = DUtils.getInstance();
         Bindings jsonObj;
 
         try {
-            jsonObj = (Bindings) DUtils.Json.getInstance().fromJson(jsonString);
+            jsonObj = DUtils.Json.getInstance().fromJsonObject(jsonString);
         } catch (ClassCastException e) {
             throw new JsonParseException("Cannot parse JSON correctly for DRecord", e);
         }
@@ -100,13 +115,27 @@ public class DRecord {
             record.setStatus((String) jsonObj.get("status"));
         }
 
-        // handle input/output. DUtils.Json.fromJson() should have already parsed JsonString into JsonElement.
-        // Note that we assume Input/Output are JSON Object, not primitives. To use primitives, extend this class.
-        if (jsonObj.containsKey("input")) {
-            record.setInput((Bindings) jsonObj.get("input"));
-        }
-        if (jsonObj.containsKey("output")) {
-            record.setInput((Bindings) jsonObj.get("output"));
+        // handle input/output. From JSON, input/output are encoded in JSON, and need decode again.
+        // Note that we assume Input/Output are JSON Object (ie Bindings), not primitives (ie Integer, String, etc).
+        // To use primitives, extend this class.
+
+        try {
+            if (jsonObj.containsKey("input")) {
+                String inputJson = (String) jsonObj.get("input");
+                Bindings inputObj = DUtils.Json.getInstance().fromJsonObject(inputJson);
+                if (inputObj != null) {
+                    record.setInput(inputObj);
+                }
+            }
+            if (jsonObj.containsKey("output")) {
+                String outputJson = (String) jsonObj.get("output");
+                Bindings outputObj = DUtils.Json.getInstance().fromJsonObject(outputJson);
+                if (outputObj != null) {
+                    record.setOutput(outputObj);
+                }
+            }
+        } catch (ClassCastException | JsonParseException e) {
+            throw new JsonParseException("Cannot parse JSON correctly for DRecord", e);
         }
 
         return record;
@@ -114,6 +143,7 @@ public class DRecord {
 
     /**
      * Encode the object into Bindings object.
+     * ATTENTION: input/output are still in Bindings. Not encoded in String. They should be encoded as String in toJson().
      *
      * @return
      */
@@ -138,6 +168,7 @@ public class DRecord {
 
     /**
      * Encode the DRecord in JSON string. We don't validate the object here. Validation is on the receiving end.
+     * ATTENTION: we want Input/Output to be encoded in String before encode the entire object in String
      *
      * @return the encoded json string.
      */
