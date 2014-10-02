@@ -1,6 +1,7 @@
 package org.drupal.project.computing;
 
 import com.google.gson.*;
+import com.intellij.refactoring.typeCook.deductive.resolver.Binding;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.exec.*;
 import org.apache.commons.httpclient.Cookie;
@@ -20,6 +21,8 @@ import org.drupal.project.computing.exception.DRuntimeException;
 import org.drupal.project.computing.exception.DSiteException;
 import org.drupal.project.computing.exception.DSystemExecutionException;
 
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
 import java.io.*;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
@@ -331,11 +334,7 @@ public class DUtils {
         }
     }
 
-    /**
-     * Encapsulate json object.
-     * @param obj
-     * @return
-     */
+
 //    @Deprecated
 //    public String toJson(Object obj) {
 //        return getDefaultGson().toJson(obj);
@@ -662,13 +661,13 @@ public class DUtils {
          * @return Core status in Map<String, Object>.
          * @throws DSiteException
          */
-        public Map<String, Object> getCoreStatus() throws DSiteException {
-            Map<String, Object> coreStatus = new HashMap<>();
+        public Bindings getCoreStatus() throws DSiteException {
+            Bindings coreStatus = new SimpleBindings();
             try {
 
                 // execute drush status
                 String output = execute(new String[]{"core-status", "--pipe", "--format=json"});
-                Map<String, Object> jsonObject = (Map<String, Object>) Json.getInstance().fromJson(output);
+                Bindings jsonObject = (Bindings) Json.getInstance().fromJson(output);
                 coreStatus.putAll(jsonObject);
 
             } catch (Exception e) {
@@ -850,11 +849,11 @@ public class DUtils {
                 return list;
 
             } else if (element.isJsonObject()) {
-                Map<String, Object> map = new HashMap<String, Object>();
+                Bindings bindings = new SimpleBindings();
                 for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
-                    map.put(entry.getKey(), fromJson(entry.getValue()));
+                    bindings.put(entry.getKey(), fromJson(entry.getValue()));
                 }
-                return map;
+                return bindings;
             }
             throw new AssertionError("Invalid JsonElement.");
         }

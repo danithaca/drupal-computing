@@ -42,8 +42,8 @@ public class DRecord {
     private Long uid; // nullable, can't change during runtime.
     private Long created;
     // these are input/output and status parameters
-    private Map<String, Object> input;
-    private Map<String, Object> output;
+    private Bindings input;
+    private Bindings output;
     private Status status;
     private String message;
     private Long weight;
@@ -64,10 +64,10 @@ public class DRecord {
     public static DRecord fromJson(String jsonString) throws JsonSyntaxException, JsonParseException, IllegalArgumentException {
         DRecord record = new DRecord();
         DUtils utils = DUtils.getInstance();
-        Map<String, Object> jsonObj;
+        Bindings jsonObj;
 
         try {
-            jsonObj = (Map<String, Object>) DUtils.Json.getInstance().fromJson(jsonString);
+            jsonObj = (Bindings) DUtils.Json.getInstance().fromJson(jsonString);
         } catch (ClassCastException e) {
             throw new JsonParseException("Cannot parse JSON correctly for DRecord", e);
         }
@@ -103,10 +103,10 @@ public class DRecord {
         // handle input/output. DUtils.Json.fromJson() should have already parsed JsonString into JsonElement.
         // Note that we assume Input/Output are JSON Object, not primitives. To use primitives, extend this class.
         if (jsonObj.containsKey("input")) {
-            record.setInput((Map<String, Object>) jsonObj.get("input"));
+            record.setInput((Bindings) jsonObj.get("input"));
         }
         if (jsonObj.containsKey("output")) {
-            record.setInput((Map<String, Object>) jsonObj.get("output"));
+            record.setInput((Bindings) jsonObj.get("output"));
         }
 
         return record;
@@ -212,19 +212,19 @@ public class DRecord {
         this.created = created;
     }
 
-    public Map<String, Object> getInput() {
+    public Bindings getInput() {
         return input;
     }
 
-    public void setInput(Map<String, Object> input) {
+    public void setInput(Bindings input) {
         this.input = input;
     }
 
-    public Map<String, Object> getOutput() {
+    public Bindings getOutput() {
         return output;
     }
 
-    public void setOutput(Map<String, Object> output) {
+    public void setOutput(Bindings output) {
         this.output = output;
     }
 

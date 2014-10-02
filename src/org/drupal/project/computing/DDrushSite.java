@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import org.drupal.project.computing.exception.DRuntimeException;
 import org.drupal.project.computing.exception.DSiteException;
 
+import javax.script.Bindings;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -68,7 +69,7 @@ public class DDrushSite extends DSite {
 
     @Override
     public String getDrupalVersion() throws DSiteException {
-        Map<String, Object> coreStatus = drush.getCoreStatus();
+        Bindings coreStatus = drush.getCoreStatus();
         if (!coreStatus.containsKey("drupal-version")) {
             throw new DSiteException("Cannot get drupal version.");
         }

@@ -7,6 +7,8 @@ import org.drupal.project.computing.DConfig;
 import org.drupal.project.computing.DUtils;
 import org.junit.Test;
 
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +59,7 @@ public class DUtilsTest {
         assertEquals("Expected drush version", "6.2.0", drush.getVersion());
 
         // test drupal version
-        Map<String, Object> coreStatus = drush.getCoreStatus();
+        Bindings coreStatus = drush.getCoreStatus();
         System.out.println(coreStatus.toString());
         assertNotNull(coreStatus);
         String drupalVersion = (String) coreStatus.get("drupal-version");
@@ -68,7 +70,7 @@ public class DUtilsTest {
         String jsonStr = drush.computingEval("return node_load(1);").trim();
         System.out.println(jsonStr);
         assertTrue(jsonStr.startsWith("{") && jsonStr.endsWith("}"));
-        Map<String, Object> jsonObj = (Map<String, Object>) DUtils.Json.getInstance().fromJson(jsonStr);
+        Bindings jsonObj = (Bindings) DUtils.Json.getInstance().fromJson(jsonStr);
         String nidStr = (String) jsonObj.get("nid");
         assertEquals("1", nidStr);
         assertEquals(new Integer(1), new Integer(nidStr));
@@ -134,11 +136,11 @@ public class DUtilsTest {
 
     @Test
     public void testJson() {
-        Map<String, Object> jsonObj = new HashMap<String, Object>();
+        Bindings jsonObj = new SimpleBindings();
         jsonObj.put("abc", 1);
         jsonObj.put("hello", "world");
         String jsonString = DUtils.Json.getInstance().toJson(jsonObj);
-        Map<String, Object> json1 = (Map<String, Object>) DUtils.Json.getInstance().fromJson(jsonString);
+        Bindings json1 = (Bindings) DUtils.Json.getInstance().fromJson(jsonString);
         assertEquals(1, ((Number) json1.get("abc")).intValue());
         assertEquals("world", (String) json1.get("hello"));
 
@@ -152,10 +154,10 @@ public class DUtilsTest {
         //System.out.println(gson.toJson(gson.fromJson(jsonStr)));
 
 
-            /*Map<String, Object> oldJson = new HashMap<String, Object>();
+            /*Bindings oldJson = new HashBindings();
             oldJson.put("hello", 1);
             String oldJsonString = DUtils.getInstance().toJson(oldJson);
-            Map<String, Object> newJson = new HashMap<String, Object>();
+            Bindings newJson = new SimpleBindings();
             newJson.put("hello", 1);
             newJson.put("abc", "def");
             String newJsonString = DUtils.getInstance().toJson(newJson);
