@@ -1,14 +1,24 @@
 package org.drupal.project.computing;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
+import com.intellij.refactoring.typeCook.deductive.resolver.Binding;
 
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 /**
  * Maps to a Computing entity in Drupal.
- * Services the "boundary object" between Drupal and Agent.
+ * Serves as the "boundary object" between Drupal and Agent.
+ *
+ * Input/Output/etc only encodes in Json string before getting initialized into DRecord object.
+ * All DRecord object are ready-to-process with Json encoding etc taken care of.
+ *
  */
 public class DRecord {
 
@@ -26,165 +36,208 @@ public class DRecord {
     // this variables can't change after construction.
     // remove the final decorator to facilitate json creation.
     private Long id;
-    private String application;
+    private String application; // this can't map to an application before execution.
     private String command;
     private String label;
     private Long uid; // nullable, can't change during runtime.
     private Long created;
-
     // these are input/output and status parameters
-    private byte[] input;
-    private byte[] output;
-    private String status;   // internally saved as String, but setter/getter are Status enum.
+    private Map<String, Object> input;
+    private Map<String, Object> output;
+    private Status status;
     private String message;
     private Long weight;
     private Long changed;
 
-    /**
-     * Points to the site where this record belongs to. Can't get changed after construction.
-     * If needs to change, create a new record instead.
-     */
-    // protected final DSite site;
 
+    public DRecord() {
+        // default constructor.
+    }
 
     /**
-     * From Drupal json output, construct a Record object.
-     * This is easier for callers to pass in parameters, regardless of parameters position or numbers.
+     * Factory method. Create a DRecord object from JSON string.
+     * Required field in JSON: id, application, command
      *
-     * @param map Database map for this record, should exact match the record.
+     * @param jsonString the JSON string to create the DRecord object.
+     * @return the DRecord object.
      */
-    public DRecord(Map<String, Object> map) {
-        assert map != null;
+    public static DRecord fromJson(String jsonString) throws JsonSyntaxException, JsonParseException, IllegalArgumentException {
+        DRecord record = new DRecord();
+        DUtils utils = DUtils.getInstance();
+        Map<String, Object> jsonObj;
 
-        this.id = DUtils.getInstance().getLong(map.get("id")); // if id is null, it means this is a dummy record.
-        this.application = (String) map.get("application");     // could be null for dummys, assert application != null;
-        this.command = (String) map.get("command");    // could be null for dummys, assert command != null;
-        this.label = (String) map.get("label");   // note: even though this can be null, class type cast would still work.
-        this.uid = DUtils.getInstance().getLong(map.get("uid"));
-        this.created = DUtils.getInstance().getLong(map.get("created"));
+        try {
+            jsonObj = (Map<String, Object>) DUtils.Json.getInstance().fromJson(jsonString);
+        } catch (ClassCastException e) {
+            throw new JsonParseException("Cannot parse JSON correctly for DRecord", e);
+        }
 
-        this.input = (byte[]) map.get("input");
-        this.output = (byte[]) map.get("output");
+        // set ID, required
+        if (jsonObj.containsKey("id")) {
+            record.setId(utils.getLong(jsonObj.get("id")));
+        } else throw new IllegalArgumentException("Cannot retrieve ID field from JSON");
 
-        this.status = (String) map.get("status");
-        this.message = (String) map.get("message");
-        this.weight = DUtils.getInstance().getLong(map.get("weight"));   // could be null for dummies, assert weight != null;
-        this.changed = DUtils.getInstance().getLong(map.get("changed"));
+        // set Application, required
+        if (jsonObj.containsKey("application")) {
+            record.setApplication((String) jsonObj.get("application"));
+        } else throw new IllegalArgumentException("Cannot retrieve Application field from JSON");
 
-        // post check string length. note that they could be null
-        assert (status == null || status.length() == 3) && (application == null || application.length() <= 50) && (command == null || command.length() <= 50);
-        // we don't check other length, which might get truncated.
+        // set Command, required
+        if (jsonObj.containsKey("command")) {
+            record.setCommand((String) jsonObj.get("command"));
+        } else throw new IllegalArgumentException("Cannot retrieve Command field from JSON");
+
+        // set other optional parameters
+        if (jsonObj.containsKey("label")) record.setLabel((String) jsonObj.get("label"));
+        if (jsonObj.containsKey("message")) record.setLabel((String) jsonObj.get("message"));
+        if (jsonObj.containsKey("uid")) record.setUid(utils.getLong(jsonObj.get("uid")));
+        if (jsonObj.containsKey("created")) record.setUid(utils.getLong(jsonObj.get("created")));
+        if (jsonObj.containsKey("changed")) record.setUid(utils.getLong(jsonObj.get("changed")));
+        if (jsonObj.containsKey("weight")) record.setUid(utils.getLong(jsonObj.get("weight")));
+
+        if (jsonObj.containsKey("status")) {
+            // this setter handles String object too.
+            record.setStatus((String) jsonObj.get("status"));
+        }
+
+        // handle input/output. DUtils.Json.fromJson() should have already parsed JsonString into JsonElement.
+        // Note that we assume Input/Output are JSON Object, not primitives. To use primitives, extend this class.
+        if (jsonObj.containsKey("input")) {
+            record.setInput((Map<String, Object>) jsonObj.get("input"));
+        }
+        if (jsonObj.containsKey("output")) {
+            record.setInput((Map<String, Object>) jsonObj.get("output"));
+        }
+
+        return record;
     }
 
+    /**
+     * Encode the object into Bindings object.
+     *
+     * @return
+     */
+    public Bindings toBindings() {
+        Bindings jsonObj = new SimpleBindings();
 
-    public static DRecord create(String application, String command, String label, Map<String, Object> input) {
-        Map<String, Object> map = new HashMap<String, Object>();
-        map.put("application", application);
-        map.put("command", command);
-        map.put("label", label);
-        return new DRecord(map);
+        if (getId() != null) jsonObj.put("id", getId());
+        if (getApplication() != null) jsonObj.put("application", getApplication());
+        if (getCommand() != null) jsonObj.put("command", getCommand());
+        if (getLabel() != null) jsonObj.put("label", getLabel());
+        if (getMessage() != null) jsonObj.put("message", getMessage());
+        if (getUid() != null) jsonObj.put("uid", getUid());
+        if (getCreated() != null) jsonObj.put("created", getCreated());
+        if (getChanged() != null) jsonObj.put("changed", getChanged());
+        if (getWeight() != null) jsonObj.put("weight", getWeight());
+        if (getStatus() != null) jsonObj.put("status", getStatus().toString());
+        if (getInput() != null) jsonObj.put("input", getInput());
+        if (getOutput() != null) jsonObj.put("output", getOutput());
+
+        return jsonObj;
     }
 
-    @Override
-    public String toString() {
-        Properties properties = toProperties();
-        return properties.toString();
-    }
-
+    /**
+     * Encode the DRecord in JSON string. We don't validate the object here. Validation is on the receiving end.
+     *
+     * @return the encoded json string.
+     */
     public String toJson() {
-        return DUtils.getInstance().getDefaultGson().toJson(this);
+        Bindings jsonObj = toBindings();
+        return DUtils.Json.getInstance().toJson(jsonObj);
     }
 
-    public Properties toProperties() {
-        Gson gson = DUtils.getInstance().getDefaultGson();
-        String json = gson.toJson(this);
-        return gson.fromJson(json, Properties.class);
-    }
 
     /**
-     * Return a map of the record.
-     * This can be done with Apache BeanUtils, but this is preferred for more control.
-     * Just to get a list of stuff could use this.toProperties() too.
-     *
+     * If ID is not set yet, that means the record is pragmatically created and not persisted yet.
      * @return
      */
-    public Map<String, Object> toMap() {
-        Map<String, Object> map = new HashMap<String, Object>();
-
-        map.put("id", id);
-        map.put("application", application);
-        map.put("command", command);
-        map.put("label", label);
-        map.put("uid", uid);
-        map.put("created", created);
-
-        map.put("input", input);
-        map.put("output", output);
-
-        map.put("status", status);      // note: here is the string, not enum
-        map.put("message", message);
-        map.put("weight", weight);
-        map.put("changed", changed);
-
-        return map;
-    }
-
-    public String readInput() {
-        return input == null ? null : new String(input);
-    }
-
-    public void writeOutput(String output) {
-        this.output = output == null ? null : output.getBytes();
+    public boolean isNew() {
+        return getId() == null;
     }
 
 
-    public boolean isSaved() {
-        return id != null;
+    //////////////////////////// getters and setters ///////////////////////////
+
+    public Long getId() {
+        return id;
     }
 
-    /**
-     * A record is active when "status" is not set. When status is set, the record is not active anymore
-     * @return
-     */
-    public boolean isActive() {
-        return status == null;
+    public void setId(Long id) {
+        // do not change "id" of the record if it's already set.
+        assert id >= 0 && this.id == null;
+        this.id = id;
     }
 
-    /**
-     * A record is ready when it is active as well as "control" is set to be READY.
-     * @return
-     */
-    public boolean isReady() {
-        return isActive() && getControl() == Control.REDY;
+    public String getApplication() {
+        return application;
     }
 
+    public void setApplication(String application) {
+        // do not change "application" of the record.
+        assert application != null && this.application == null;
+        this.application = application;
+    }
 
-    ////////////////////// getters and setters /////////////////////////
+    public String getCommand() {
+        return command;
+    }
 
-    public byte[] getInput() {
+    public void setCommand(String command) {
+        // do not change "command" of the record.
+        assert command != null && this.command == null;
+        this.command = command;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public Long getUid() {
+        return uid;
+    }
+
+    public void setUid(Long uid) {
+        this.uid = uid;
+    }
+
+    public Long getCreated() {
+        return created;
+    }
+
+    public void setCreated(Long created) {
+        this.created = created;
+    }
+
+    public Map<String, Object> getInput() {
         return input;
     }
 
-    public void setInput(byte[] input) {
+    public void setInput(Map<String, Object> input) {
         this.input = input;
     }
 
-    public byte[] getOutput() {
+    public Map<String, Object> getOutput() {
         return output;
     }
 
-    public void setOutput(byte[] output) {
+    public void setOutput(Map<String, Object> output) {
         this.output = output;
     }
 
     public Status getStatus() {
-        return status == null ? null : Status.valueOf(status);
+        return status;
     }
 
     public void setStatus(Status status) {
-        assert status != null;
-        this.status = status.toString();
-        assert this.status.length() == 4;
+        this.status = status;
+    }
+
+    public void setStatus(String statusCode) {
+        this.status = (statusCode == null) ? null : Status.valueOf(statusCode);
     }
 
     public String getMessage() {
@@ -203,53 +256,11 @@ public class DRecord {
         this.weight = weight;
     }
 
-
-
-    public Long getId() {
-        return id;
+    public Long getChanged() {
+        return changed;
     }
 
-    public String getApplication() {
-        return application;
-    }
-
-    public String getCommand() {
-        return command;
-    }
-
-    public void setCommand(String command) {
-        // this is to assert that command doesn't get changed in runtime.
-        // it could be null and get set later.
-        assert command != null && this.command == null;
-        this.command = command;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public Long getUid() {
-        return uid;
-    }
-
-    public void setUid(Long uid) {
-        // this is to assert that uid doesn't get changed in runtime.
-        // it could be null and get set later.
-        assert uid != null && this.uid == null;
-        this.uid = uid;
-    }
-
-    public Long getCreated() {
-        return created;
-    }
-
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public void setCreated(Long created) {
-        assert created != null && this.created == null;
-        this.created = created;
+    public void setChanged(Long changed) {
+        this.changed = changed;
     }
 }

@@ -1,6 +1,8 @@
 package org.drupal.project.computing;
 
-import java.util.List;
+import org.drupal.project.computing.exception.DRuntimeException;
+import org.drupal.project.computing.exception.DSiteException;
+
 import java.util.logging.Logger;
 
 /**
@@ -37,7 +39,7 @@ abstract public class DSite {
      *
      * @param appName
      * @return A computing record to handle, or NULL is none is found.
-     * @throws DSiteException
+     * @throws org.drupal.project.computing.exception.DSiteException
      */
     abstract public DRecord claimRecord(String appName) throws DSiteException;
 

@@ -1,20 +1,14 @@
 package org.drupal.project.computing.test;
 
-import com.google.gson.JsonElement;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.drupal.project.computing.DDrushSite;
 import org.drupal.project.computing.DRecord;
-import org.drupal.project.computing.DSiteException;
+import org.drupal.project.computing.exception.DSiteException;
 import org.drupal.project.computing.DUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -62,38 +56,38 @@ public class DDrushSiteTest {
     }
 
 
-    private DRecord createRecord() {
-        Map map = new HashMap();
-        map.put("app", "common");
-        map.put("command", "drush");
-        map.put("description", "test from drush " + RandomStringUtils.randomAlphanumeric(10));
-        map.put("id1", new Random().nextInt(10000));
-        map.put("string1", "hello,world");
-        return new DRecord(map);
-    }
+//    private DRecord createRecord() {
+//        Map map = new HashMap();
+//        map.put("app", "common");
+//        map.put("command", "drush");
+//        map.put("description", "test from drush " + RandomStringUtils.randomAlphanumeric(10));
+//        map.put("id1", new Random().nextInt(10000));
+//        map.put("string1", "hello,world");
+//        return new DRecord(map);
+//    }
 
     //@Test
-    public void testSave() throws DSiteException {
-        Logger logger = DUtils.getInstance().getPackageLogger();
-        logger.setLevel(Level.FINEST);
-
-        DRecord r0 = createRecord();
-        //System.out.println(r0.toJson());
-        long id = site.createRecord(r0);
-
-        DRecord r1 = site.loadRecord(id);
-        //System.out.println(r1.toString());
-        assertEquals(r0.getId1(), r1.getId1());
-    }
+//    public void testSave() throws DSiteException {
+//        Logger logger = DUtils.getInstance().getPackageLogger();
+//        logger.setLevel(Level.FINEST);
+//
+//        DRecord r0 = createRecord();
+//        //System.out.println(r0.toJson());
+//        long id = site.createRecord(r0);
+//
+//        DRecord r1 = site.loadRecord(id);
+//        //System.out.println(r1.toString());
+//        assertEquals(r0.getId1(), r1.getId1());
+//    }
 
     //@Test
     public void testLoad() throws DSiteException {
         //DRecord r1 = site.loadRecord(6);
         //System.out.println(r1.toString());
-        List<DRecord> records = site.queryReadyRecords("common");
-        for (DRecord r : records) {
-            //System.out.println(r.toString());
-        }
+//        List<DRecord> records = site.queryReadyRecords("common");
+//        for (DRecord r : records) {
+//            //System.out.println(r.toString());
+//        }
     }
 
     //@Test

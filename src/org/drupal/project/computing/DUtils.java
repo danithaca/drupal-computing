@@ -15,7 +15,10 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
-import org.junit.Test;
+import org.drupal.project.computing.exception.DConfigException;
+import org.drupal.project.computing.exception.DRuntimeException;
+import org.drupal.project.computing.exception.DSiteException;
+import org.drupal.project.computing.exception.DSystemExecutionException;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -25,10 +28,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
-
-import static junit.framework.Assert.*;
 
 /**
  * Singleton of the utilities class.
@@ -602,7 +602,7 @@ public class DUtils {
          * @param command The drush command to execute, ignoring drush binary and site alias.
          * @param input Input stream, could be null.
          * @return STDOUT results.
-         * @throws DSiteException
+         * @throws org.drupal.project.computing.exception.DSiteException
          */
         public String execute(String[] command, String input) throws DSiteException {
             try {
@@ -806,13 +806,22 @@ public class DUtils {
          * @param json the json string
          * @return json object in map usually.
          */
-        public Object fromJson(String json) {
+        public Object fromJson(String json) throws JsonIOException, JsonParseException, JsonSyntaxException {
             if (StringUtils.isEmpty(json)) {
                 return null;
             }
             JsonElement element = defaultJsonParser.parse(json);
             return fromJson(element);
         }
+
+
+        public <T> T fromJson(String json, Class<T> classOfT) throws JsonSyntaxException {
+            if (StringUtils.isEmpty(json)) {
+                return null;
+            }
+            return defaultGson.fromJson(json, classOfT);
+        }
+
 
         private Object fromJson(JsonElement element) {
             if (element.isJsonNull()) {

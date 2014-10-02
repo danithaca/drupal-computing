@@ -1,4 +1,4 @@
-package org.drupal.project.computing;
+package org.drupal.project.computing.exception;
 
 /**
  * Expected failure from executing a DCommand.

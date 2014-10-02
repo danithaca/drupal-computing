@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import org.drupal.project.computing.exception.DRuntimeException;
+import org.drupal.project.computing.exception.DSiteException;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -111,31 +113,31 @@ public class DDrushSite extends DSite {
 
     }
 
-    @Override @Deprecated
-    public List<DRecord> queryReadyRecords(String appName) throws DSiteException {
-        String phpCode = String.format("return computing_query_active_records('%s');", appName);
-        String json = drush.computingEval(phpCode);
-
-        // see the JSON example code at Gson class.
-        Gson gson = DUtils.getInstance().getDefaultGson();
-        Type listType = new TypeToken<List<DRecord>>() {}.getType();
-
-        List<DRecord> records;
-        try {
-            records = gson.fromJson(json, listType);
-        } catch (JsonSyntaxException e) {
-            logger.finer("JSON output: " + json);
-            throw new DRuntimeException(e);
-        }
-        return records;
-    }
+//    @Override @Deprecated
+//    public List<DRecord> queryReadyRecords(String appName) throws DSiteException {
+//        String phpCode = String.format("return computing_query_active_records('%s');", appName);
+//        String json = drush.computingEval(phpCode);
+//
+//        // see the JSON example code at Gson class.
+//        Gson gson = DUtils.getInstance().getDefaultGson();
+//        Type listType = new TypeToken<List<DRecord>>() {}.getType();
+//
+//        List<DRecord> records;
+//        try {
+//            records = gson.fromJson(json, listType);
+//        } catch (JsonSyntaxException e) {
+//            logger.finer("JSON output: " + json);
+//            throw new DRuntimeException(e);
+//        }
+//        return records;
+//    }
 
     @Override
     public void updateRecord(DRecord record) throws DSiteException {
-        assert record.isSaved();
+        assert !record.isNew();
         String[] command = {
                 "computing_update_record",
-                DUtils.getInstance().toJson(record.getId()),
+                DUtils.Json.getInstance().toJson(record.getId()),
                 record.toJson()
         };
 
@@ -157,25 +159,25 @@ public class DDrushSite extends DSite {
 
     @Override
     public void updateRecordField(DRecord record, String fieldName) throws DSiteException {
-        assert record.isSaved();
-        String fieldValue = record.toProperties().getProperty(fieldName, "");
-        String[] command = {
-                "computing_update_record_field",
-                DUtils.getInstance().getDefaultGson().toJson(record.getId()),
-                DUtils.getInstance().getDefaultGson().toJson(fieldName),
-                DUtils.getInstance().getDefaultGson().toJson(fieldValue),
-        };
-        String json = drush.computingCall(command);
-        int updated = DUtils.getInstance().getDefaultGson().fromJson(json, Integer.class);
-        if (updated != 1) {
-            // here we don't throw exception because if no field is changed, record is not updated either.
-            logger.warning("Update record failure. Please check code.");
-        }
+//        assert !record.isNew();
+//        String fieldValue = record.toBindings().get(fieldName);
+//        String[] command = {
+//                "computing_update_record_field",
+//                DUtils.getInstance().getDefaultGson().toJson(record.getId()),
+//                DUtils.getInstance().getDefaultGson().toJson(fieldName),
+//                DUtils.getInstance().getDefaultGson().toJson(fieldValue),
+//        };
+//        String json = drush.computingCall(command);
+//        int updated = DUtils.getInstance().getDefaultGson().fromJson(json, Integer.class);
+//        if (updated != 1) {
+//            // here we don't throw exception because if no field is changed, record is not updated either.
+//            logger.warning("Update record failure. Please check code.");
+//        }
     }
 
     @Override
     public long createRecord(DRecord record) throws DSiteException {
-        assert !record.isSaved();
+        assert record.isNew();
         assert record.getApplication() != null && record.getCommand() != null && record.getApplication().length() > 0 && record.getCommand().length() > 0;
 
         String[] command = {

@@ -1,5 +1,6 @@
 package org.drupal.project.computing.test;
 
+import com.google.gson.Gson;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.DConfig;
@@ -177,69 +178,69 @@ public class DUtilsTest {
 
 
     //@Test
-    public void testPhp() throws Exception {
-        String results;
-        DConfig config = new DConfig();
-        assertTrue(StringUtils.isNotBlank(config.getPhpExec()));
-
-        DUtils.Php php = new DUtils.Php();
-
-        // System.out.println(DUtils.getInstance().executeShell("php -v"));
-
-        results = php.evaluate("<?php echo 'hello, world';");
-        assertEquals("hello, world", results.trim());
-        results = php.evaluate("<?php echo json_encode(100);");
-        assertEquals(new Integer(100), DUtils.getInstance().getDefaultGson().fromJson(results, Integer.class));
-
-        // try to get $databases from settings.php.
-        config.setProperty("drupal.drush", "drush @local");
-        File settingsFile = config.locateFile("settings.php");
-        String databasesCode = php.extractVariable(settingsFile, "$databases");
-        assertTrue(databasesCode.startsWith("$databases"));
-
-        // test serialization
-        byte[] serialized;
-        // serialized = php.serialize(new Integer[] {1, 3}))
-        serialized = php.serialize("hello, world");
-        //System.out.println(new String(serialized));
-        assertEquals("hello, world", php.unserialize(serialized, String.class));
-        assertEquals(new Integer(1), php.unserialize(php.serialize(1), Integer.class));
-    }
+//    public void testPhp() throws Exception {
+//        String results;
+//        DConfig config = new DConfig();
+//        assertTrue(StringUtils.isNotBlank(config.getPhpExec()));
+//
+//        DUtils.Php php = new DUtils.Php();
+//
+//        // System.out.println(DUtils.getInstance().executeShell("php -v"));
+//
+//        results = php.evaluate("<?php echo 'hello, world';");
+//        assertEquals("hello, world", results.trim());
+//        results = php.evaluate("<?php echo json_encode(100);");
+//        assertEquals(new Integer(100), new Gson().fromJson(results, Integer.class));
+//
+//        // try to get $databases from settings.php.
+//        config.setProperty("drupal.drush", "drush @local");
+//        File settingsFile = config.locateFile("settings.php");
+//        String databasesCode = php.extractVariable(settingsFile, "$databases");
+//        assertTrue(databasesCode.startsWith("$databases"));
+//
+//        // test serialization
+//        byte[] serialized;
+//        // serialized = php.serialize(new Integer[] {1, 3}))
+//        serialized = php.serialize("hello, world");
+//        //System.out.println(new String(serialized));
+//        assertEquals("hello, world", php.unserialize(serialized, String.class));
+//        assertEquals(new Integer(1), php.unserialize(php.serialize(1), Integer.class));
+//    }
 
     /**
      * This method is not supposed to test anything. It's simply running to print out some stuff.
      */
     //@Test
-    public void simplePrint() throws Exception {
-        DConfig config = new DConfig();
-        config.setProperty("drupal.drush", "drush @local");
-        File settingsFile = config.locateFile("settings.php");
-        //String settingsCode = DUtils.getInstance().readContent(new FileReader(settingsFile));
-        System.out.println("Settings.php: " + settingsFile.getAbsolutePath());
-
-        DUtils.Php php = new DUtils.Php(config.getPhpExec());
-        System.out.println(php.extractVariable(settingsFile, "$databases"));
-        //System.out.println(DUtils.getInstance().stripPhpComments(settingsCode));
-    }
+//    public void simplePrint() throws Exception {
+//        DConfig config = new DConfig();
+//        config.setProperty("drupal.drush", "drush @local");
+//        File settingsFile = config.locateFile("settings.php");
+//        //String settingsCode = DUtils.getInstance().readContent(new FileReader(settingsFile));
+//        System.out.println("Settings.php: " + settingsFile.getAbsolutePath());
+//
+//        DUtils.Php php = new DUtils.Php(config.getPhpExec());
+//        System.out.println(php.extractVariable(settingsFile, "$databases"));
+//        //System.out.println(DUtils.getInstance().stripPhpComments(settingsCode));
+//    }
 
     //@Test
-    public void testXmlrpc() throws Exception {
-        DUtils.Xmlrpc xmlrpc = new DUtils.Xmlrpc("http://rgb.knowsun.com/x");
-        //Xmlrpc xmlrpc = new Xmlrpc("http://d7dev1.localhost/xmlrpc");
-        Map result;
-        result = xmlrpc.connect();
-        assertTrue(((String)result.get("sessid")).length() > 0);
-
-        result = xmlrpc.login("test", "test");
-        assertTrue(result.size() > 0);
-        System.out.println(result);
-
-        result = (Map) xmlrpc.execute("node.retrieve", 1);
-        assertTrue(result.size() > 0);
-        System.out.println(result);
-
-        assertTrue(xmlrpc.logout());
-    }
+//    public void testXmlrpc() throws Exception {
+//        DUtils.Xmlrpc xmlrpc = new DUtils.Xmlrpc("http://rgb.knowsun.com/x");
+//        //Xmlrpc xmlrpc = new Xmlrpc("http://d7dev1.localhost/xmlrpc");
+//        Map result;
+//        result = xmlrpc.connect();
+//        assertTrue(((String)result.get("sessid")).length() > 0);
+//
+//        result = xmlrpc.login("test", "test");
+//        assertTrue(result.size() > 0);
+//        System.out.println(result);
+//
+//        result = (Map) xmlrpc.execute("node.retrieve", 1);
+//        assertTrue(result.size() > 0);
+//        System.out.println(result);
+//
+//        assertTrue(xmlrpc.logout());
+//    }
 
 }
 

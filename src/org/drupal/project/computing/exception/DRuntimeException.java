@@ -1,4 +1,4 @@
-package org.drupal.project.computing;
+package org.drupal.project.computing.exception;
 
 /**
  * This is the default runtime exception for Drupal Hybrid Computing

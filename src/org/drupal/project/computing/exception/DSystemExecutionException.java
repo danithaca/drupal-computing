@@ -1,4 +1,4 @@
-package org.drupal.project.computing;
+package org.drupal.project.computing.exception;
 
 /**
  * Throws when there's a problem executing shell command.

@@ -1,4 +1,4 @@
-package org.drupal.project.computing;
+package org.drupal.project.computing.exception;
 
 /**
  * This exception is thrown when there's something wrong communicating with the Drupal site (DSite)
