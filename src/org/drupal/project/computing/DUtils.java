@@ -802,7 +802,7 @@ public class DUtils {
          * Parse a Json string into either a primitive, a list, or a map.
          *
          * @param json the json string
-         * @return json object in map usually.
+         * @return json object in Bindings usually.
          */
         public Object fromJson(String json) throws JsonIOException, JsonParseException, JsonSyntaxException {
             if (StringUtils.isEmpty(json)) {
@@ -831,7 +831,7 @@ public class DUtils {
                     return primitive.getAsBoolean();
                 } else if (primitive.isNumber()) {
                     // attention: this returns gson.internal.LazilyParsedNumber, which has problem when use gson.toJson(obj) to serialize again.
-                    // LazilyParsedNumber is a subclass of Number.
+                    // LazilyParsedNumber is a subclass of Number, can't be cast to Integer, Long, etc.
                     return primitive.getAsNumber();
                     // this is to avoid using LazilyParsedNumber
                     //return new BigDecimal(primitive.getAsString());

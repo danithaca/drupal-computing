@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.StringUtils;
+import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DRuntimeException;
 import org.drupal.project.computing.exception.DSiteException;
 
@@ -139,10 +140,22 @@ public class DDrushSite extends DSite {
 
 
     @Override
-    public DRecord claimRecord(String appName) throws DSiteException {
+    public DRecord claimRecord(String appName) throws DSiteException, DNotFoundException {
         String jsonResult = drush.computingCall("computing_claim",appName);
         try {
-            return DRecord.fromJson(jsonResult);
+            Object jsonObj = DUtils.Json.getInstance().fromJson(jsonResult);
+            if (jsonObj instanceof Boolean && !((Boolean) jsonObj)) {
+                // this is also expected when no item is available.
+                throw new DNotFoundException("No record available to be claimed.");
+
+            } else if (jsonObj instanceof Bindings) {
+                // the most common case.
+                return DRecord.fromBindings((Bindings) jsonObj);
+
+            } else {
+                // all other cases are not valid.
+                throw new DSiteException("Unexpected result from claiming a record.");
+            }
         } catch (JsonParseException | IllegalArgumentException e) {
             throw new DSiteException("Cannot parse JSON result.", e);
         }
@@ -150,7 +163,12 @@ public class DDrushSite extends DSite {
 
     @Override
     public void finishRecord(DRecord record) throws DSiteException {
-
+        // basically we want to save data in 3 fields: status, message and output.
+        assert !record.isNew();
+        String jsonResult = drush.computingCall("computing_finish", record.getId(), record.getStatus().toString(), record.getMessage(), record.getOutput());
+        if (! DUtils.Json.getInstance().fromJson(jsonResult, Boolean.class)) {
+            throw new DSiteException("Errors running finishRecord function.");
+        }
     }
 
 //    @Override @Deprecated
@@ -175,44 +193,31 @@ public class DDrushSite extends DSite {
     @Override
     public void updateRecord(DRecord record) throws DSiteException {
         assert !record.isNew();
-        String[] command = {
-                "computing_update_record",
-                DUtils.Json.getInstance().toJson(record.getId()),
-                record.toJson()
-        };
-
-        String json = drush.computingCall(command);
-
-        Gson gson = new Gson();
-        int updated = 0;
-        try {
-            updated = gson.fromJson(json, Integer.class);
-        } catch (JsonSyntaxException e) {
-            logger.finer("JSON output: " + json);
-            throw new DRuntimeException(e);
-        }
-        if (updated != 1) {
-            // here we don't throw exception because if no field is changed, record is not updated either.
-            logger.warning("Update record failure. Please check code.");
+        // note we don't change "changed" for the record. It's automatically handled in drupal.
+        // can't use the following code because Gson doesn't know how to encode "DRecord". We need to manually call "toJson".
+        //drush.computingCall("computing_update", record);
+        String jsonResult = drush.computingCall(new String[] {"computing_update", record.toJson()});
+        if (! DUtils.Json.getInstance().fromJson(jsonResult, Boolean.class)) {
+            throw new DSiteException("Errors running updateRecord function.");
         }
     }
 
     @Override
     public void updateRecordField(DRecord record, String fieldName) throws DSiteException {
-//        assert !record.isNew();
-//        String fieldValue = record.toBindings().get(fieldName);
-//        String[] command = {
-//                "computing_update_record_field",
-//                DUtils.getInstance().getDefaultGson().toJson(record.getId()),
-//                DUtils.getInstance().getDefaultGson().toJson(fieldName),
-//                DUtils.getInstance().getDefaultGson().toJson(fieldValue),
-//        };
-//        String json = drush.computingCall(command);
-//        int updated = DUtils.getInstance().getDefaultGson().fromJson(json, Integer.class);
-//        if (updated != 1) {
-//            // here we don't throw exception because if no field is changed, record is not updated either.
-//            logger.warning("Update record failure. Please check code.");
-//        }
+        assert !record.isNew();
+        Bindings recordBindings = record.toBindings();
+
+        // we probably want to save null value as well.
+        //if (!recordBindings.containsKey(fieldName)) {
+        //    throw new IllegalArgumentException("Field " + fieldName + " does not exist.");
+        //}
+
+        // we know Gson can handle any fieldValue types (number, string, bindings, etc).
+        Object fieldValue = recordBindings.get(fieldName);
+        String jsonResult = drush.computingCall("computing_update_field", record.getId(), fieldName, fieldValue);
+        if (! DUtils.Json.getInstance().fromJson(jsonResult, Boolean.class)) {
+            throw new DSiteException("Errors running updateRecordField function on field: " + fieldName);
+        }
     }
 
 

@@ -1,5 +1,6 @@
 package org.drupal.project.computing;
 
+import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DRuntimeException;
 import org.drupal.project.computing.exception.DSiteException;
 
@@ -36,12 +37,12 @@ abstract public class DSite {
 
     /**
      * Get one available computing record from Drupal to process. Drupal will handle the logic of providing the record.
+     * If there's no record to return, throw
      *
      * @param appName
      * @return A computing record to handle, or NULL is none is found.
-     * @throws org.drupal.project.computing.exception.DSiteException
      */
-    abstract public DRecord claimRecord(String appName) throws DSiteException;
+    abstract public DRecord claimRecord(String appName) throws DSiteException, DNotFoundException;
 
 
     /**
@@ -58,7 +59,6 @@ abstract public class DSite {
      *
      * @param appName
      * @return One active record for processing or null if no record is found.
-     * @deprecated Don't use this. Use getRecord() instead.
      */
 //    public DRecord getNextRecord(String appName) throws DSiteException {
 //        return queryReadyRecords(appName).get(0);
@@ -71,7 +71,6 @@ abstract public class DSite {
      *
      * @return All active records that are not handled.
      * @param appName
-     * @deprecated Don't use this. Use getRecord() instead.
      */
 //    abstract public List<DRecord> queryReadyRecords(String appName) throws DSiteException;
 
@@ -84,6 +83,7 @@ abstract public class DSite {
 
     /**
      * Update only the specified field of the record.
+     *
      * @param record
      * @param fieldName
      */
@@ -93,17 +93,17 @@ abstract public class DSite {
     /**
      * Save the new record Drupal using the data in the parameter.
      *
-     *
      * @param record The newly created record. record.isSave() has too be true.
      * @return The database record ID of the newly created record.
      */
     abstract public long createRecord(DRecord record) throws DSiteException;
 
     /**
-     * Load one record according to its ID. Return null if there's no such a DRecord with the given id.
+     * Load one record according to its ID. This is expected to return a valid DRecord.
+     * If id is invalid, this function will throw an exception.
      *
      * @param id
-     * @return
+     * @return the loaded DRecord.
      */
     abstract public DRecord loadRecord(long id) throws DSiteException;
 

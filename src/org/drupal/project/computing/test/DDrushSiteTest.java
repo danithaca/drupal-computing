@@ -2,6 +2,7 @@ package org.drupal.project.computing.test;
 
 import org.drupal.project.computing.DDrushSite;
 import org.drupal.project.computing.DRecord;
+import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 import org.drupal.project.computing.DUtils;
 import org.junit.Before;
@@ -84,7 +85,7 @@ public class DDrushSiteTest {
 
 
     @Test
-    public void testRecord() throws DSiteException {
+    public void testRecordSimple() throws DSiteException {
         Bindings input = new SimpleBindings();
         input.put("message", "hello, world");
         input.put("test", 1);
@@ -107,6 +108,82 @@ public class DDrushSiteTest {
         assertTrue (r2Id > 0);
         DRecord r2r = site.loadRecord(r2Id);
         assertEquals(r2.getMessage(), r2r.getMessage());
+    }
+
+    @Test
+    public void testRecordUpdate() throws DSiteException {
+        // prepare command
+        Bindings input = new SimpleBindings();
+        input.put("message", "hello, world");
+        input.put("test", 1);
+        DRecord record = new DRecord("default", "Echo", "Test Echo", input);
+
+        // make sure this will get claimed first.
+        record.setWeight(-100L);
+
+        long recordId = site.createRecord(record);
+        assertTrue(recordId > 0);
+
+        // test claim
+        DRecord cl = null;
+        try {
+            cl = site.claimRecord("default");
+        } catch (DNotFoundException e) {
+            e.printStackTrace();
+            assertTrue(false);
+        }
+        assertEquals((Long) (-100L), cl.getWeight());
+        assertEquals("hello, world", cl.getInput().get("message"));
+
+        // test update
+        cl.setMessage("updated");
+        site.updateRecord(cl);
+        DRecord cl_a = site.loadRecord(cl.getId());
+        assertEquals("updated", cl_a.getMessage());
+
+        // test update field
+        cl_a.setOutput(input);
+        site.updateRecordField(cl_a, "output");
+        DRecord cl_b = site.loadRecord(cl_a.getId());
+        assertEquals(1, ((Number) cl_b.getOutput().get("test")).intValue());
+
+        // test finish
+        cl_b.setStatus(DRecord.Status.SCF);
+        site.finishRecord(cl_b);
+        DRecord cl_c = site.loadRecord(cl_b.getId());
+        assertEquals(DRecord.Status.SCF, cl_c.getStatus());
+
+        // expected exception. can't update status to a record with status != 'RUN'.
+        try {
+            site.finishRecord(cl_c);
+            assertTrue(false);
+        } catch (DSiteException e) {
+            assertTrue(true);
+        }
+    }
+
+    //@Test
+    public void testAdHoc() throws DSiteException {
+        DRecord re = site.loadRecord(10);
+        //System.out.println(re.toJson());
+//        DRecord re = null;
+//        try {
+//            re = site.claimRecord("default");
+//            System.out.println(re.toJson());
+//        } catch (DNotFoundException e) {
+//            System.out.println("Not Found");
+//        }
+        //System.out.println(re.toJson());
+        re.setStatus(DRecord.Status.SCF);
+        re.setMessage("Updated record");
+        //site.updateRecord(re);
+
+        Bindings output = new SimpleBindings();
+        output.put("message", "hello, world");
+        output.put("test", 1);
+        re.setOutput(output);
+        //site.updateRecordField(re, "output");
+        site.finishRecord(re);
     }
 
     //@Test

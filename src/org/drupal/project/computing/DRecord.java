@@ -1,16 +1,11 @@
 package org.drupal.project.computing;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * Maps to a Computing entity in Drupal.
@@ -73,18 +68,29 @@ public class DRecord {
      * Expected Input/Output not as strings (enclosed by "") but as original json encodings (enclosed by {})
      *
      * @param jsonString the JSON string to create the DRecord object.
+     *      We expect it to be a valid DRecord encoded JSON string. If not, it will throw an exception.
      * @return the DRecord object.
      */
     public static DRecord fromJson(String jsonString) throws JsonParseException, JsonSyntaxException, IllegalArgumentException {
-        DRecord record = new DRecord();
-        DUtils utils = DUtils.getInstance();
         Bindings jsonObj;
-
         try {
             jsonObj = DUtils.Json.getInstance().fromJsonObject(jsonString);
         } catch (ClassCastException e) {
             throw new JsonParseException("Cannot parse JSON correctly for DRecord", e);
         }
+        return fromBindings(jsonObj);
+    }
+
+
+    /**
+     * Constructor from Bindings object.
+     *
+     * @param jsonObj
+     * @return
+     */
+    public static DRecord fromBindings(Bindings jsonObj) throws JsonParseException, JsonSyntaxException, IllegalArgumentException {
+        DRecord record = new DRecord();
+        DUtils utils = DUtils.getInstance();
 
         // set ID, required
         if (jsonObj.containsKey("id")) {
@@ -130,6 +136,7 @@ public class DRecord {
 
         return record;
     }
+
 
     /**
      * Encode the object into Bindings object.
