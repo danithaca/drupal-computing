@@ -99,7 +99,7 @@ public class DDrushSiteTest {
         assertEquals(record.getCommand(), rebuild.getCommand());
         assertEquals((Long) recordId, rebuild.getId());
         assertEquals(input.get("message"), rebuild.getInput().get("message"));
-        assertTrue(record.getCreated() > 0);
+        assertTrue(rebuild.getCreated() > 0);
 
         DRecord r2 = new DRecord("default", "Echo", "Test Echo", null);
         r2.setMessage("test message");

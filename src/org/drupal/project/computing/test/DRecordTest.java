@@ -1,6 +1,7 @@
 package org.drupal.project.computing.test;
 
 import org.drupal.project.computing.DRecord;
+import org.drupal.project.computing.DUtils;
 import org.junit.Test;
 
 import javax.script.Bindings;
@@ -36,6 +37,6 @@ public class DRecordTest {
         assertEquals("Echo", rebuild.getCommand());
         assertNull(rebuild.getMessage());
         assertEquals("hello, world", rebuild.getInput().get("message"));
-        assertEquals(1, rebuild.getOutput().get("test"));
+        assertEquals((Long) 1L, DUtils.getInstance().getLong(rebuild.getOutput().get("test")));
     }
 }

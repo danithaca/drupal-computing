@@ -103,35 +103,26 @@ public class DRecord {
 
         // set other optional parameters
         if (jsonObj.containsKey("label")) record.setLabel((String) jsonObj.get("label"));
-        if (jsonObj.containsKey("message")) record.setLabel((String) jsonObj.get("message"));
+        if (jsonObj.containsKey("message")) record.setMessage((String) jsonObj.get("message"));
         if (jsonObj.containsKey("uid")) record.setUid(utils.getLong(jsonObj.get("uid")));
-        if (jsonObj.containsKey("created")) record.setUid(utils.getLong(jsonObj.get("created")));
-        if (jsonObj.containsKey("changed")) record.setUid(utils.getLong(jsonObj.get("changed")));
-        if (jsonObj.containsKey("weight")) record.setUid(utils.getLong(jsonObj.get("weight")));
+        if (jsonObj.containsKey("created")) record.setCreated(utils.getLong(jsonObj.get("created")));
+        if (jsonObj.containsKey("changed")) record.setChanged(utils.getLong(jsonObj.get("changed")));
+        if (jsonObj.containsKey("weight")) record.setWeight(utils.getLong(jsonObj.get("weight")));
 
         if (jsonObj.containsKey("status")) {
             // this setter handles String object too.
             record.setStatus((String) jsonObj.get("status"));
         }
 
-        // handle input/output. From JSON, input/output are encoded in JSON, and need decode again.
         // Note that we assume Input/Output are JSON Object (ie Bindings), not primitives (ie Integer, String, etc).
         // To use primitives, extend this class.
 
         try {
             if (jsonObj.containsKey("input")) {
-                String inputJson = (String) jsonObj.get("input");
-                Bindings inputObj = DUtils.Json.getInstance().fromJsonObject(inputJson);
-                if (inputObj != null) {
-                    record.setInput(inputObj);
-                }
+                record.setInput((Bindings) jsonObj.get("input"));
             }
             if (jsonObj.containsKey("output")) {
-                String outputJson = (String) jsonObj.get("output");
-                Bindings outputObj = DUtils.Json.getInstance().fromJsonObject(outputJson);
-                if (outputObj != null) {
-                    record.setOutput(outputObj);
-                }
+                record.setOutput((Bindings) jsonObj.get("output"));
             }
         } catch (ClassCastException | JsonParseException e) {
             throw new JsonParseException("Cannot parse JSON correctly for DRecord", e);
