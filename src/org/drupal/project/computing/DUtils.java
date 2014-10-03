@@ -214,7 +214,7 @@ public class DUtils {
         executor.setExitValue(0);
 
         // handle timeout. default 2 minutes.
-        int timeout = new Integer(DConfig.loadDefault().getProperty("drupal.computing.exec.timeout", "120000"));
+        int timeout = new Integer(DConfig.loadDefault().getProperty("dc.exec.timeout", "120000"));
         ExecuteWatchdog watchdog = new ExecuteWatchdog(timeout);
         executor.setWatchdog(watchdog);
 
@@ -297,14 +297,14 @@ public class DUtils {
      * @param classObject
      * @return
      */
-    public String getIdentifier(Class<?> classObject) {
-        Identifier id = classObject.getAnnotation(Identifier.class);
-        if (id != null) {
-            return id.value();
-        } else {
-            return classObject.getSimpleName();
-        }
-    }
+//    public String getIdentifier(Class<?> classObject) {
+//        Identifier id = classObject.getAnnotation(Identifier.class);
+//        if (id != null) {
+//            return id.value();
+//        } else {
+//            return classObject.getSimpleName();
+//        }
+//    }
 
 
     /**

@@ -62,10 +62,11 @@ public class DConfig {
         // load config file only when needed.
         if (reload || defaultConfig == null) {
             DConfig config = new DConfig();
-            String configFileName = config.getProperty("drupal.computing.config.file", "config.properties");
+            // "dc.config.file" can only get set as ENVIRONMENT or system properties.
+            String configFileName = config.getProperty("dc.config.file", "config.properties");
             Reader configFileReader = null;
 
-            // try to load config file.
+            // try to locate config file.
             if (configFileName.equals("config.properties")) {
                 try {
                     File configFile = DUtils.getInstance().locateFile(configFileName);
@@ -437,14 +438,14 @@ public class DConfig {
      * @return The drush executable command.
      */
     public String getDrushCommand() {
-        return this.getProperty("drupal.computing.drush.command", "drush");
+        return this.getProperty("dc.drush.command", "drush");
     }
 
     /**
      * @return The default drush site alias. Users should include "@" in the config file.
      */
     public String getDrushSiteAlias() {
-        return this.getProperty("drupal.computing.drush.site", "@self");
+        return this.getProperty("dc.drush.site", "@self");
     }
 
     /**
