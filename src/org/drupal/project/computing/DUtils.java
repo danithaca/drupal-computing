@@ -1,7 +1,6 @@
 package org.drupal.project.computing;
 
 import com.google.gson.*;
-import com.intellij.refactoring.typeCook.deductive.resolver.Binding;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.exec.*;
 import org.apache.commons.httpclient.Cookie;

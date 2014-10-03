@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.refactoring.typeCook.deductive.resolver.Binding;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.script.Bindings;
@@ -72,6 +70,7 @@ public class DRecord {
     /**
      * Factory method. Create a DRecord object from JSON string.
      * Required field in JSON: id, application, command
+     * Expected Input/Output not as strings (enclosed by "") but as original json encodings (enclosed by {})
      *
      * @param jsonString the JSON string to create the DRecord object.
      * @return the DRecord object.
@@ -168,7 +167,7 @@ public class DRecord {
 
     /**
      * Encode the DRecord in JSON string. We don't validate the object here. Validation is on the receiving end.
-     * ATTENTION: we want Input/Output to be encoded in String before encode the entire object in String
+     * ATTENTION: we don't encode Input/Output as String before encode the entire object
      *
      * @return the encoded json string.
      */

@@ -13,8 +13,6 @@ import javax.script.Bindings;
 import java.lang.reflect.Type;
 import java.util.*;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 
 /**
  * The Drupal instance that can be accessed locally through drush.
