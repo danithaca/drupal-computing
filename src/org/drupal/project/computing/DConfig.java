@@ -67,20 +67,14 @@ public class DConfig {
             Reader configFileReader = null;
 
             // try to locate config file.
-            if (configFileName.equals("config.properties")) {
-                try {
-                    File configFile = DUtils.getInstance().locateFile(configFileName);
-                    assert configFile.exists();
-                    configFileReader = new FileReader(configFile);
-                } catch (FileNotFoundException e) {
-                    config.logger.warning("Cannot find configuration file: " + configFileName);
+            try {
+                File configFile = DUtils.getInstance().locateFile(configFileName);
+                if (!configFile.exists() || !configFile.isFile()) {
+                    throw new FileNotFoundException();
                 }
-            } else {
-                try {
-                    configFileReader = new FileReader(configFileName);
-                } catch (FileNotFoundException e) {
-                    config.logger.warning("Cannot find configuration file: " + configFileName);
-                }
+                configFileReader = new FileReader(configFile);
+            } catch (FileNotFoundException e) {
+                config.logger.warning("Cannot find configuration file: " + configFileName);
             }
 
             // read config file and load into config.

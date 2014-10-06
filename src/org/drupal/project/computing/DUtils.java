@@ -70,13 +70,21 @@ public class DUtils {
      * 2. the same directory as the jar file located.
      * 3. user home directory
      *
-     * @param fileName the name of the file to locate. Do not include directory.
+     * @param fileName
+     *   the name of the file to locate. Do not include directory.
+     *   If given absolute path as filename, return the file without searching.
      * @return The file object if found.
      * @throws FileNotFoundException
      */
     public File locateFile(String fileName) throws FileNotFoundException {
         assert StringUtils.isNotBlank(fileName);
         File theFile = null;
+
+        // 0. check whether the file is absolute or relative.
+        theFile = new File(fileName);
+        if (theFile.isAbsolute() && theFile.exists()) {
+            return theFile;
+        }
 
         // 1. the working directory,
         String workingDir = System.getProperty("user.dir");

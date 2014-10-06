@@ -1,4 +1,4 @@
-package org.drupal.project.computing.command;
+package org.drupal.project.computing.common;
 
 import org.drupal.project.computing.DCommand;
 import org.drupal.project.computing.exception.DCommandExecutionException;
@@ -23,4 +23,5 @@ public class EchoCommand extends DCommand {
         result.put("pong", (pingString == null) ? "Hello, World" : pingString);
         message.append("Echo successful.");
     }
+
 }

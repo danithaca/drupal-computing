@@ -4,6 +4,11 @@ import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
@@ -23,25 +28,59 @@ import java.util.logging.Logger;
  * and launchFromShell() would have to be static factory method, and then it'll increase complexity.
  *
  * This design combines DApplication and DLauncher. Pro: simple. Con: Can't use other launcher easily.
- *
- * This is not an abstract class. This is the most basic class where other applications can build on it.
  */
 
-public class DApplication {
+abstract public class DApplication {
 
     protected Logger logger = DUtils.getInstance().getPackageLogger();
 
-    // most imported properties
-    final String applicationName;
-    DSite site;
+    /**
+     * The name of the Application
+     */
+    protected final String applicationName;
+
+    /**
+     * Access to Drupal site.
+     */
+    protected DSite site;
+
+    /**
+     * The mapping of command name to DCommand class name.
+     */
+    protected Properties commandMapping;
+
+    /**
+     * Default configurations for the Agent.
+     */
+    protected DConfig config;
+
 
     public DApplication(String applicationName) {
+        logger.finest("Create DApplication: " + applicationName);
         this.applicationName = applicationName;
+
+        logger.finest("Loading configuration file.");
+        this.config = DConfig.loadDefault();
+
+        logger.finest("Building command mapping.");
+        this.commandMapping = this.registerCommandMapping();
+
+        switch (config.getProperty("dc.drush.access", "drush")) {
+            case "services":
+                // set site to be services.
+                break;
+            case "drush":
+            default:
+                logger.finest("Initializing connection to Drupal via Drush.");
+                site = DDrushSite.loadDefault();
+                break;
+        }
     }
 
 
     /**
-     * This is the main execution
+     * This is the main execution point.
+     * Input: DRecord. Output: DRecord.
      * @param record
      */
     protected void processRecord(DRecord record) {
@@ -50,8 +89,9 @@ public class DApplication {
         try {
 
             // prepare the command
+            logger.info("Preparing to executing command: " + record.getCommand() + ". ID: " + record.getId());
             DCommand command = createCommand(record.getCommand());
-            command.setContext(record, this.site, this);
+            command.setContext(record, this.site, this, this.config);
             command.prepare(record.getInput());
 
             // execute it.
@@ -62,6 +102,7 @@ public class DApplication {
             record.setOutput(command.getResult());
             // if no error found, set status to be successful. error will cause exception and out of the loop.
             record.setStatus(DRecord.Status.SCF);
+            logger.info("Command execution accomplished.");
 
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -72,29 +113,41 @@ public class DApplication {
             e.printStackTrace();
             record.setMessage("Command execution error. " + e.getMessage());
             record.setStatus(DRecord.Status.FLD);
+
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            e.printStackTrace();
+            record.setMessage("Cannot identify or instantiate command. " + e.getMessage());
+            record.setStatus(DRecord.Status.FLD);
         }
     }
 
 
-    protected DCommand createCommand(String commandName) {
-        // first, check mapping from config.properties.
+    protected DCommand createCommand(String commandName) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        assert commandMapping != null;
 
-        // second, check coded command map
+        // the command class to be created.
+        String className;
+        if (commandMapping.containsKey(commandName)) {
+            className = commandMapping.getProperty(commandName);
+        } else {
+            className = commandName;
+        }
 
-        // finally, check if we can create object directly from commandName
-
-        return null;
+        Class<DCommand> commandClass = (Class<DCommand>) Class.forName(className);
+        return commandClass.newInstance();
     }
 
 
-    protected void launch() {
+    public void launch() {
         launchSingleThread();
     }
 
 
-    private void launchSingleThread() {
-        site = DDrushSite.loadDefault();
+    protected void launchSingleThread() {
+        assert site != null;
+
         DRecord record;
+        // do 100 records at most.
         for (int i = 0; i < 100; i++) {
             try {
 
@@ -105,19 +158,57 @@ public class DApplication {
             } catch (DSiteException e) {
                 e.printStackTrace();
                 logger.severe("Connect Drupal site error: " + e.getMessage());
+                // TODO: try to write error into record.
+
                 break;
             } catch (DNotFoundException e) {
                 // this exception is expected.
-                logger.info("Found no record with READY status for application '" + applicationName + "'.");
+                logger.info("No more record with READY status for application '" + applicationName + "'.");
                 break;
             }
         }
     }
 
 
-    public static void main(String[] args) {
-        DApplication application = new DApplication("computing");
-        application.launch();
+    /**
+     * Retrieve the mapping from DRecord "command" name to a DCommand class.
+     * 1. Get all mappings from code.
+     * 2. Get mappings from command.properties, which will override anything defined in #1.
+     *
+     * @return Command mapping with the key as DRecord "command" field, and value as DCommand class name.
+     */
+    protected Properties registerCommandMapping() {
+        Properties commandMapping = new Properties();
+
+        // first, get properties from code.
+        commandMapping.putAll(registerDefaultCommandMapping());
+
+        // second, check mapping from command.properties.
+        String commandFileName = config.getProperty("dc.command.file", "command.properties");
+        Properties commandMappingOverride = new Properties();
+
+        // try to get file
+        try {
+            File commandFile = DUtils.getInstance().locateFile(commandFileName);
+            commandMappingOverride.load(new FileReader(commandFile));
+        } catch (FileNotFoundException e) {
+            logger.warning("Cannot locate command mapping file: " + commandFileName);
+        } catch (IOException e) {
+            logger.warning("Cannot read command mapping file: " + commandFileName);
+        }
+        
+        if (!commandMappingOverride.isEmpty()) {
+            commandMapping.putAll(commandMappingOverride);
+        }
+
+        return commandMapping;
     }
+
+    /**
+     * Build the default command mapping from code.
+     *
+     * @return A Properties object with key as DRecord "command" field, and value as DCommand class name.
+     */
+    protected abstract Properties registerDefaultCommandMapping();
 
 }

@@ -115,6 +115,11 @@ abstract public class DCommand implements Runnable, Callable<Void> {
      */
     protected DRecord record;
 
+    /**
+     * Agent configuration.
+     */
+    protected DConfig config;
+
 
     /**
      * Set the contextual data.
@@ -122,11 +127,13 @@ abstract public class DCommand implements Runnable, Callable<Void> {
      * @param record
      * @param site
      * @param application
+     * @param config
      */
-    public void setContext(DRecord record, DSite site, DApplication application) {
+    public void setContext(DRecord record, DSite site, DApplication application, DConfig config) {
         this.record = record;
         this.site = site;
         this.application = application;
+        this.config = config;
     }
 
 }

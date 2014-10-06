@@ -1,4 +1,18 @@
 ; This is the configurations for the Drupal computing agents
 
+; drush command. set it if agents can't find drush command.
+; dc.drush.command = drush
+
 ; drush site alias to specify which Drupal installation the agent is going to access.
 dc.drush.site = @local
+
+; command mapping file.
+; dc.command.file = command.properties
+
+; system execution timeout, in millisecond. controls when to timeout execution of system command (e.g. Drush)
+; dc.exec.timeout = 120000
+
+; default access to drupal set as "drush". to use services module, set as "services"
+; dc.drupal.access = services
+; dc.services.user.name = scott
+; dc.services.user.password = tiger
