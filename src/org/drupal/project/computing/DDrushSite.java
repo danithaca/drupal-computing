@@ -15,9 +15,9 @@ import javax.script.Bindings;
  */
 public class DDrushSite extends DSite {
 
-    private DUtils.DDrush drush;
+    private DDrush drush;
 
-    public DDrushSite(DUtils.DDrush drush) {
+    public DDrushSite(DDrush drush) {
         this.drush = drush;
     }
 
@@ -26,7 +26,7 @@ public class DDrushSite extends DSite {
      * @return Default DDrushSite object.
      */
     public static DDrushSite loadDefault() {
-        return new DDrushSite(DUtils.DDrush.loadDefault());
+        return new DDrushSite(DDrush.loadDefault());
     }
 
     /**
@@ -50,7 +50,7 @@ public class DDrushSite extends DSite {
 //    }
 
 
-    public DUtils.DDrush getDrush() {
+    public DDrush getDrush() {
         return drush;
     }
 

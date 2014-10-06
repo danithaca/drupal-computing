@@ -471,7 +471,7 @@ public class DConfig {
 
         // if still not set, try drush
         if (StringUtils.isBlank(drupalRoot)) {
-            DUtils.DDrush drush = new DUtils.DDrush(getDrushCommand(), getDrushSiteAlias());
+            DDrush drush = new DDrush(getDrushCommand(), getDrushSiteAlias());
             try {
                 drupalRoot = drush.execute(new String[]{"drupal-directory", "--local"}).trim();
             } catch (DSiteException e) {}

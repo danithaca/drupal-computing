@@ -2,6 +2,7 @@ package org.drupal.project.computing.test;
 
 import org.apache.commons.exec.CommandLine;
 import org.drupal.project.computing.DConfig;
+import org.drupal.project.computing.DDrush;
 import org.drupal.project.computing.DUtils;
 import org.junit.Test;
 
@@ -51,7 +52,7 @@ public class DUtilsTest {
     @Test
     public void testDrush() throws Exception {
         // test drush version
-        DUtils.DDrush drush = DUtils.DDrush.loadDefault();
+        DDrush drush = DDrush.loadDefault();
         assertEquals("Expected drush version", "6.2.0", drush.getVersion());
 
         // test drupal version
@@ -91,7 +92,7 @@ public class DUtilsTest {
             assertTrue("Expected exception caught.", true);
         }
         try {
-            DUtils.DDrush badDrush = new DUtils.DDrush("drush", "@xxx");
+            DDrush badDrush = new DDrush("drush", "@xxx");
             badDrush.computingCall("variable_get", "install_profile");
             assertTrue(false);
         } catch (Exception e) {
