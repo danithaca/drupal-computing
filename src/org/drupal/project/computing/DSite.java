@@ -132,23 +132,6 @@ abstract public class DSite {
      */
     abstract public String getDrupalVersion() throws DSiteException;
 
-    /**
-     * Execute Drupal API "variable_get()".
-     * Perhaps we should use generic method, but implementation is hard.
-     * If defaultValue is a JsonElement, will output JsonElement too.
-     *
-     * @param name
-     * @param defaultValue
-     * @return
-     */
-    abstract public Object variableGet(String name, Object defaultValue) throws DSiteException;
-
-    /**
-     * Execute Drupal API "variable_set()"
-     * @param name
-     * @param value
-     */
-    abstract public void variableSet(String name, Object value) throws DSiteException;
 
     /**
      * @return Drupal site's current timestamp. Equivalent to PHP time().
