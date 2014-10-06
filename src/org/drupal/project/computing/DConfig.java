@@ -3,15 +3,10 @@ package org.drupal.project.computing;
 import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.exception.DConfigException;
 import org.drupal.project.computing.exception.DSiteException;
-import org.drupal.project.computing.exception.DSystemExecutionException;
-import org.junit.Test;
 
 import java.io.*;
-import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
-
-import static org.junit.Assert.*;
 
 
 /**
@@ -191,26 +186,26 @@ public class DConfig {
 //    }
 
 
-    private Properties extractDbProperties(Properties properties) {
-        Properties dbProperties = new Properties();
-        for (String name : properties.stringPropertyNames()) {
-            if (name.startsWith("drupal.db.")) {
-                dbProperties.setProperty(name.substring("drupal.db.".length()), properties.getProperty(name));
-            }
-        }
-        return dbProperties;
-    }
-
-
-    private Properties getDbPropertiesDirectly() throws DConfigException {
-        Properties dbProperties = extractDbProperties(properties);
-        if (dbProperties.containsKey("username") && dbProperties.containsKey("password")
-                && dbProperties.containsKey("url") && dbProperties.containsKey("driverClassName")) {
-            return dbProperties;
-        } else {
-            throw new DConfigException("Cannot get database configuration directly.");
-        }
-    }
+//    private Properties extractDbProperties(Properties properties) {
+//        Properties dbProperties = new Properties();
+//        for (String name : properties.stringPropertyNames()) {
+//            if (name.startsWith("drupal.db.")) {
+//                dbProperties.setProperty(name.substring("drupal.db.".length()), properties.getProperty(name));
+//            }
+//        }
+//        return dbProperties;
+//    }
+//
+//
+//    private Properties getDbPropertiesDirectly() throws DConfigException {
+//        Properties dbProperties = extractDbProperties(properties);
+//        if (dbProperties.containsKey("username") && dbProperties.containsKey("password")
+//                && dbProperties.containsKey("url") && dbProperties.containsKey("driverClassName")) {
+//            return dbProperties;
+//        } else {
+//            throw new DConfigException("Cannot get database configuration directly.");
+//        }
+//    }
 
     /**
      * Process database settings read from settings.php ($databases[] array) and save results directly in the properties.
@@ -476,7 +471,7 @@ public class DConfig {
 
         // if still not set, try drush
         if (StringUtils.isBlank(drupalRoot)) {
-            DUtils.Drush drush = new DUtils.Drush(getDrushCommand(), getDrushSiteAlias());
+            DUtils.DDrush drush = new DUtils.DDrush(getDrushCommand(), getDrushSiteAlias());
             try {
                 drupalRoot = drush.execute(new String[]{"drupal-directory", "--local"}).trim();
             } catch (DSiteException e) {}

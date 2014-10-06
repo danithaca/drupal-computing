@@ -51,7 +51,7 @@ public class DUtilsTest {
     @Test
     public void testDrush() throws Exception {
         // test drush version
-        DUtils.Drush drush = DUtils.Drush.loadDefault();
+        DUtils.DDrush drush = DUtils.DDrush.loadDefault();
         assertEquals("Expected drush version", "6.2.0", drush.getVersion());
 
         // test drupal version
@@ -91,7 +91,7 @@ public class DUtilsTest {
             assertTrue("Expected exception caught.", true);
         }
         try {
-            DUtils.Drush badDrush = new DUtils.Drush("drush", "@xxx");
+            DUtils.DDrush badDrush = new DUtils.DDrush("drush", "@xxx");
             badDrush.computingCall("variable_get", "install_profile");
             assertTrue(false);
         } catch (Exception e) {

@@ -563,7 +563,7 @@ public class DUtils {
     /**
      * This is the utility class to run drush command.
      */
-    public static class Drush {
+    public static class DDrush {
 
         private String drushCommand;
         private String drushSiteAlias;
@@ -577,7 +577,7 @@ public class DUtils {
          * @param drushCommand drush executable command
          * @param drushSiteAlias drush site alias
          */
-        public Drush (String drushCommand, String drushSiteAlias) {
+        public DDrush(String drushCommand, String drushSiteAlias) {
             assert StringUtils.isNotBlank(drushCommand) && StringUtils.isNotBlank(drushSiteAlias);
             // TODO: check "drush cc" and existence of computing module.
             this.drushCommand = drushCommand;
@@ -585,10 +585,10 @@ public class DUtils {
         }
 
 
-        public static Drush loadDefault() {
+        public static DDrush loadDefault() {
             // might need to check validity.
             DConfig config = DConfig.loadDefault();
-            return new Drush(config.getDrushCommand(), config.getDrushSiteAlias());
+            return new DDrush(config.getDrushCommand(), config.getDrushSiteAlias());
         }
 
 

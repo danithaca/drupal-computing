@@ -1,18 +1,12 @@
 package org.drupal.project.computing;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.StringUtils;
 import org.drupal.project.computing.exception.DNotFoundException;
-import org.drupal.project.computing.exception.DRuntimeException;
 import org.drupal.project.computing.exception.DSiteException;
 
 import javax.script.Bindings;
-import java.lang.reflect.Type;
-import java.util.*;
 
 
 /**
@@ -21,9 +15,9 @@ import java.util.*;
  */
 public class DDrushSite extends DSite {
 
-    private DUtils.Drush drush;
+    private DUtils.DDrush drush;
 
-    public DDrushSite(DUtils.Drush drush) {
+    public DDrushSite(DUtils.DDrush drush) {
         this.drush = drush;
     }
 
@@ -32,7 +26,7 @@ public class DDrushSite extends DSite {
      * @return Default DDrushSite object.
      */
     public static DDrushSite loadDefault() {
-        return new DDrushSite(DUtils.Drush.loadDefault());
+        return new DDrushSite(DUtils.DDrush.loadDefault());
     }
 
     /**
@@ -56,7 +50,7 @@ public class DDrushSite extends DSite {
 //    }
 
 
-    public DUtils.Drush getDrush() {
+    public DUtils.DDrush getDrush() {
         return drush;
     }
 

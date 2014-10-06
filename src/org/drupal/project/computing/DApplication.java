@@ -1,5 +1,6 @@
 package org.drupal.project.computing;
 
+import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.exception.DCommandExecutionException;
 import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
@@ -32,6 +33,88 @@ import java.util.logging.Logger;
 
 abstract public class DApplication {
 
+    //////////////////////////////// abstract methods for overrides //////////////////////
+
+
+    /**
+     * Build the default command mapping from code.
+     * @return A Properties object with key as DRecord "command" field, and value as DCommand class name.
+     */
+    protected abstract Properties registerDefaultCommandMapping();
+
+
+
+    //////////////////////////////// public methods //////////////////////////////////////
+
+
+    public DApplication(String applicationName) {
+        logger.finest("Create DApplication: " + applicationName);
+        this.applicationName = applicationName;
+
+        this.config = DConfig.loadDefault();
+        logger.finest("Loaded (or tried to load) configuration file: " + config.getProperty("dc.config.file", "config.properties"));
+
+        this.commandMapping = this.registerCommandMapping();
+        logger.finest("Built command mapping, allowed commands: " + StringUtils.join(commandMapping.propertyNames(), ","));
+
+        switch (config.getProperty("dc.drush.access", "drush")) {
+            case "services":
+                // set site to be services.
+                break;
+            case "drush":
+            default:
+                logger.finest("Initializing connection to Drupal via Drush.");
+                site = DDrushSite.loadDefault();
+                break;
+        }
+
+        // check connection.
+        if (!site.checkConnection()) {
+            logger.severe("Drupal access is not validated.");
+        }
+    }
+
+
+    /**
+     * Launch the application, and execute commands.
+     */
+    public void launch() {
+        launchSingleThread();
+    }
+
+
+    /**
+     * Allow register command mapping ad-hoc.
+     *
+     * @param commandName
+     * @param className
+     */
+    public void setCommandMapping(String commandName, String className) {
+        this.commandMapping.put(commandName, className);
+    }
+
+
+    /**
+     * Getter for DSite field, which is initialized in constructor with settings from config.properties.
+     * @return The Drupal site (DSite) which this application is associated with.
+     */
+    public DSite getSite() {
+        assert site != null;
+        return this.site;
+    }
+
+
+    public String toString() {
+        return this.applicationName;
+    }
+
+
+
+
+    ////////////////////////////// methods available for overrides //////////////////////////////////
+
+
+
     protected Logger logger = DUtils.getInstance().getPackageLogger();
 
     /**
@@ -53,29 +136,6 @@ abstract public class DApplication {
      * Default configurations for the Agent.
      */
     protected DConfig config;
-
-
-    public DApplication(String applicationName) {
-        logger.finest("Create DApplication: " + applicationName);
-        this.applicationName = applicationName;
-
-        logger.finest("Loading configuration file.");
-        this.config = DConfig.loadDefault();
-
-        logger.finest("Building command mapping.");
-        this.commandMapping = this.registerCommandMapping();
-
-        switch (config.getProperty("dc.drush.access", "drush")) {
-            case "services":
-                // set site to be services.
-                break;
-            case "drush":
-            default:
-                logger.finest("Initializing connection to Drupal via Drush.");
-                site = DDrushSite.loadDefault();
-                break;
-        }
-    }
 
 
     /**
@@ -121,7 +181,12 @@ abstract public class DApplication {
         }
     }
 
-
+    /**
+     * Create a DCommand based on commandName string.
+     *
+     * @param commandName
+     * @return
+     */
     protected DCommand createCommand(String commandName) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         assert commandMapping != null;
 
@@ -135,11 +200,6 @@ abstract public class DApplication {
 
         Class<DCommand> commandClass = (Class<DCommand>) Class.forName(className);
         return commandClass.newInstance();
-    }
-
-
-    public void launch() {
-        launchSingleThread();
     }
 
 
@@ -204,11 +264,5 @@ abstract public class DApplication {
         return commandMapping;
     }
 
-    /**
-     * Build the default command mapping from code.
-     *
-     * @return A Properties object with key as DRecord "command" field, and value as DCommand class name.
-     */
-    protected abstract Properties registerDefaultCommandMapping();
 
 }
