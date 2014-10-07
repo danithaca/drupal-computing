@@ -292,6 +292,7 @@ public class DUtils {
      * @throws java.io.IOException
      */
     public String readContent(Reader input) throws IOException {
+        if (input == null) return null;
         StringBuilder sb = new StringBuilder();
         int c;
         while ((c = input.read()) != -1) {
@@ -301,6 +302,7 @@ public class DUtils {
     }
 
     public String readContent (InputStream input) throws IOException {
+        if (input == null) return null;
         Reader reader = new InputStreamReader(input);
         String content = readContent(reader);
         reader.close();

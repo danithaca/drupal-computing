@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 /**
  * This class helps connect to Drupal using the services.module.
  * Requires Drupal REST Sever module enabled.
+ * Requires json as output and "application/x-www-form-urlencoded"
  */
 public class DServices {
 
@@ -104,7 +105,8 @@ public class DServices {
                 return null;
             }
         } catch (JsonParseException e) {
-            throw new DSiteException("Cannot parse JSON result.", e);
+            e.printStackTrace();
+            throw new DSiteException("Cannot parse JSON result: " + jsonResponse, e);
         }
     }
 
@@ -136,7 +138,7 @@ public class DServices {
             //Get Response
             InputStream dataInput = (responseCode == HttpURLConnection.HTTP_OK) ? connection.getInputStream() : connection.getErrorStream();
             String responseContent = DUtils.getInstance().readContent(dataInput);
-            dataInput.close();
+            if (dataInput != null) dataInput.close();
 
             checkResponseCode(responseCode, responseContent);
             return responseContent;
@@ -192,7 +194,7 @@ public class DServices {
             // TODO: seems if responseCode != 200, then this will cause error.
             InputStream dataInput = (responseCode == HttpURLConnection.HTTP_OK) ? connection.getInputStream() : connection.getErrorStream();
             String responseContent = DUtils.getInstance().readContent(dataInput);
-            dataInput.close();
+            if (dataInput != null) dataInput.close();
 
 
             checkResponseCode(responseCode, responseContent);
