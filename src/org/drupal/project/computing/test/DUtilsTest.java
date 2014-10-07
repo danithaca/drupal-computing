@@ -9,6 +9,7 @@ import org.junit.Test;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 import java.io.File;
+import java.util.Properties;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
 
@@ -165,7 +166,7 @@ public class DUtilsTest {
     }
 
 
-    //@Test
+    @Test
     public void testMisc() {
         assertEquals(new Long(12L), DUtils.getInstance().getLong(new Long(12L)));
         assertEquals(new Long(5L), DUtils.getInstance().getLong("5"));
@@ -175,7 +176,14 @@ public class DUtilsTest {
         System.out.println(DUtils.getInstance().objectToString(new DConfig()));
         System.out.println(DUtils.getInstance().objectToString(1));
 
-        System.out.println(DUtils.getInstance().getMachineId());
+        Properties params = new Properties();
+        params.put("abc", "hello world");
+        params.put("def", "haha,haha");
+        String encoded = DUtils.getInstance().encodeURLQueryParameters(params);
+        System.out.println(encoded);
+        assertEquals("abc=hello+world&def=haha%2Chaha", encoded);
+
+        //System.out.println(DUtils.getInstance().getMachineId());
     }
 
 

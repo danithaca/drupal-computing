@@ -57,7 +57,7 @@ abstract public class DApplication {
         this.commandMapping = this.registerCommandMapping();
         logger.finest("Built command mapping, allowed commands: " + StringUtils.join(commandMapping.propertyNames(), ","));
 
-        switch (config.getProperty("dc.drush.access", "drush")) {
+        switch (config.getProperty("dc.site.access", "drush")) {
             case "services":
                 // set site to be services.
                 break;

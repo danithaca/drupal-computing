@@ -20,4 +20,18 @@ public class DSiteException extends Exception {
     public DSiteException(Throwable throwable) {
         super(throwable);
     }
+
+    /**
+     * The error code is arbitrary by the caller which sets it.
+     */
+    private int errorCode = 0;
+
+    public int getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(int errorCode) {
+        this.errorCode = errorCode;
+    }
+
 }

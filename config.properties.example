@@ -12,7 +12,13 @@ dc.drush.site = @local
 ; system execution timeout, in millisecond. controls when to timeout execution of system command (e.g. Drush)
 ; dc.exec.timeout = 120000
 
+; drupal site url. should starts with http:// or https://
+; dc.site.base_url = http://example.com
+
 ; default access to drupal set as "drush". to use services module, set as "services"
-; dc.drupal.access = services
+; dc.site.access = services
+
+; do not use "/" in front of the endpoint.
+; dc.services.endpoint = endpoint
 ; dc.services.user.name = scott
-; dc.services.user.password = tiger
+; dc.services.user.pass = tiger

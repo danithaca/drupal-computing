@@ -1,33 +1,23 @@
 package org.drupal.project.computing;
 
 import com.google.gson.*;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.exec.*;
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.cookie.CookiePolicy;
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteWatchdog;
+import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.xmlrpc.XmlRpcException;
-import org.apache.xmlrpc.client.XmlRpcClient;
-import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
-import org.drupal.project.computing.exception.DConfigException;
 import org.drupal.project.computing.exception.DRuntimeException;
-import org.drupal.project.computing.exception.DSiteException;
 import org.drupal.project.computing.exception.DSystemExecutionException;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 import java.io.*;
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
@@ -53,10 +43,6 @@ public class DUtils {
     public final String VERSION = "7.x-2.0-alpha1";
 
     private Logger logger;
-
-    private Gson defaultGson;
-
-
     public Logger getPackageLogger() {
         return logger;
     }
@@ -113,6 +99,32 @@ public class DUtils {
 
 
     /**
+     * Encode URL query parameters. Basically copied from Apache.HttpClient => URLEncodeUtils.format().
+     *
+     * @param params
+     * @return
+     */
+    public String encodeURLQueryParameters(Properties params) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<String> keysIterator = params.stringPropertyNames().iterator();
+
+        while (keysIterator.hasNext()) {
+            String key = keysIterator.next();
+            try {
+                sb.append(URLEncoder.encode(key, "UTF-8")).append('=').append(URLEncoder.encode(params.getProperty(key), "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                throw new IllegalArgumentException(e);
+            }
+            if (keysIterator.hasNext()) {
+                sb.append('&');
+            }
+        }
+
+        return sb.toString();
+    }
+
+
+    /**
      * Execute a command in the working dir, and return the output as a String. If error, log the errors in logger.
      * This is the un-refined version using Process and ProcessBuilder. See the other version with commons-exec.
      *
@@ -149,31 +161,31 @@ public class DUtils {
         }
     }*/
 
-    /**
-     * Retrieve the first valid MAC address as the Machine ID. We just trust that the order remains the same all the time.
-     * If there's no valid MAC address, return null.
-     * TODO: read DConfig too, eg. -Ddrupal.agent
-     * @return Machine ID (as MAC address) or null.
-     */
-    public String getMachineId() {
-        String id = null;
-        try {
-            // we can only hope the order of the enumeration remains the same each time we call.
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = interfaces.nextElement();
-                // System.out.println(networkInterface.getName());
-                byte[] mac = networkInterface.getHardwareAddress();
-                if (mac != null) {
-                    id = Hex.encodeHexString(mac);
-                    break;
-                }
-            }
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-        return id;
-    }
+//    /**
+//     * Retrieve the first valid MAC address as the Machine ID. We just trust that the order remains the same all the time.
+//     * If there's no valid MAC address, return null.
+//     * TODO: read DConfig too, eg. -Ddrupal.agent
+//     * @return Machine ID (as MAC address) or null.
+//     */
+//    public String getMachineId() {
+//        String id = null;
+//        try {
+//            // we can only hope the order of the enumeration remains the same each time we call.
+//            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+//            while (interfaces.hasMoreElements()) {
+//                NetworkInterface networkInterface = interfaces.nextElement();
+//                // System.out.println(networkInterface.getName());
+//                byte[] mac = networkInterface.getHardwareAddress();
+//                if (mac != null) {
+//                    id = Hex.encodeHexString(mac);
+//                    break;
+//                }
+//            }
+//        } catch (SocketException e) {
+//            e.printStackTrace();
+//        }
+//        return id;
+//    }
 
 
     /**
@@ -288,6 +300,13 @@ public class DUtils {
         return sb.toString();
     }
 
+    public String readContent (InputStream input) throws IOException {
+        Reader reader = new InputStreamReader(input);
+        String content = readContent(reader);
+        reader.close();
+        return content;
+    }
+
 
     /**
      * Check to make sure Java is > 1.6
@@ -296,7 +315,7 @@ public class DUtils {
     public boolean checkJavaVersion() {
         //String version = System.getProperty("java.version");
         //return version.compareTo("1.6") >= 0;
-        return SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_6);
+        return SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_7);
     }
 
 
@@ -342,72 +361,6 @@ public class DUtils {
     }
 
 
-//    @Deprecated
-//    public String toJson(Object obj) {
-//        return getDefaultGson().toJson(obj);
-//    }
-
-
-//    @Deprecated
-//    public Object fromJson(String json) {
-//        if (StringUtils.isEmpty(json)) {
-//            return null;
-//        }
-//        JsonElement element = new JsonParser().parse(json);
-//        return fromJson(element);
-//    }
-
-//    @Deprecated
-//    private Object fromJson(JsonElement element) {
-//        if (element.isJsonNull()) {
-//            return null;
-//        } else if (element.isJsonPrimitive()) {
-//            JsonPrimitive primitive = element.getAsJsonPrimitive();
-//            if (primitive.isBoolean()) {
-//                return primitive.getAsBoolean();
-//            } else if (primitive.isNumber()) {
-//                // attention: this returns gson.internal.LazilyParsedNumber, which has problem when use gson.toJson(obj) to serialize again.
-//                return primitive.getAsNumber();
-//            } else if (primitive.isString()) {
-//                return primitive.getAsString();
-//            }
-//            throw new AssertionError("Invalid JsonPrimitive.");
-//        } else if (element.isJsonArray()) {
-//            List<Object> list = new ArrayList<Object>();
-//            for (JsonElement e : element.getAsJsonArray()) {
-//                list.add(fromJson(e));
-//            }
-//            return list;
-//        } else if (element.isJsonObject()) {
-//            Map<String, Object> map = new HashMap<String, Object>();
-//            for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
-//                map.put(entry.getKey(), fromJson(entry.getValue()));
-//            }
-//            return map;
-//        }
-//        throw new AssertionError("Invalid JsonElement.");
-//    }
-
-    // doesn't work
-    /*public String appendJsonString(String oldJsonString, String key, Object extraJson) {
-        Map<String, Object> finalJson;
-        Object oldJson = DUtils.getInstance().fromJson(oldJsonString);
-        if (oldJson != null) {
-            finalJson = (Map<String, Object>) oldJson;
-        } else {
-            finalJson = new HashMap<String, Object>();
-        }
-        finalJson.put(key, extraJson);
-        return DUtils.getInstance().toJson(finalJson);
-    }*/
-
-//    @Deprecated
-//    public Gson getDefaultGson() {
-//        if (defaultGson == null) {
-//            defaultGson = new GsonBuilder().create();
-//        }
-//        return defaultGson;
-//    }
 
     public Properties loadProperties(String configString) {
         Properties config = new Properties();
@@ -428,136 +381,136 @@ public class DUtils {
         return ReflectionToStringBuilder.toString(object);
     }
 
-    /**
-     * Utility class to run PHP snippet
-     */
-    public static class Php {
-
-        private final String phpExec;
-
-        public Php(String phpExec) throws DSystemExecutionException{
-            assert StringUtils.isNotEmpty(phpExec);
-            this.phpExec = phpExec;
-            check();  // check validity of phpExec right away before doing any other things.
-        }
-
-        public Php() throws DSystemExecutionException{
-            this(new DConfig().getPhpExec());
-        }
-
-        /**
-         * Evaluates PHP code and return the output in JSON. JSR 223 should be the recommended approach, but there is no
-         * good PHP engine. PHP-Java bridge is simply a wrapper of php-cgi and doesn't do much, and is not as flexible as
-         * we call php exec. Quercus works well, but the jar file is too big to include here. In short, we'll simply call
-         * PHP executable and get results in JSON. see [#1220194]
-         *
-         * @param phpCode PHP code snippet.
-         * @return PHP code execution output.
-         */
-        public String evaluate(String phpCode) throws DSystemExecutionException {
-            CommandLine commandLine = new CommandLine(phpExec);
-            // we could suppress error. but this is not good because we want it generate errors when fails.
-            // in command line "-d error_reporting=0", but here it didn't work.
-            //commandLine.addArgument("-d error_reporting=0");
-            commandLine.addArgument("--");  // execute input from shell.
-            return DUtils.getInstance().executeShell(commandLine, null, phpCode);
-        }
-
-        /**
-         * Serialize a Java object into PHP serialize byte string.
-         *
-         * @param value
-         * @return
-         * @throws DSystemExecutionException
-         */
-        public byte[] serialize(Object value) throws DSystemExecutionException {
-            String json = DUtils.Json.getInstance().toJson(value);
-            CommandLine commandLine = new CommandLine(phpExec);
-            commandLine.addArgument("-E");
-            // first decode json, and then serialize it. needs to escape
-            commandLine.addArgument("echo serialize(json_decode($argn));", false);
-            return DUtils.getInstance().executeShell(commandLine, null, json.getBytes(), Charset.defaultCharset());
-        }
-
-        private String unserializeToJson(byte[] serializedBytes) throws DSystemExecutionException {
-            CommandLine commandLine = new CommandLine(phpExec);
-            commandLine.addArgument("-E");
-            // first unserialize php, and then encode into Json. needs to escape.
-            commandLine.addArgument("echo json_encode(unserialize($argn));", false);
-            return new String(DUtils.getInstance().executeShell(commandLine, null, serializedBytes, Charset.defaultCharset()));
-        }
-
-        /**
-         * Unserialize a PHP serialized byte string into a Java object.
-         */
-        public Object unserialize(byte[] serializedBytes) throws DSystemExecutionException {
-            return DUtils.Json.getInstance().fromJson(unserializeToJson(serializedBytes));
-        }
-
-        /**
-         * FIXME: toClass can't handle "Type" cases.
-         */
-        public <T> T unserialize(byte[] serializedBytes, Class<T> toClass) throws DSystemExecutionException {
-            return new Gson().fromJson(unserializeToJson(serializedBytes), toClass);
-        }
-
-
-        public void check() throws DSystemExecutionException {
-            // test php executable
-            String testPhp = getInstance().executeShell(phpExec + " -v");
-            if (!testPhp.startsWith("PHP")) {
-                throw new DSystemExecutionException("Cannot execute php executable: " + phpExec);
-            }
-            getInstance().logger.fine("Evaluate with PHP version: " + new Scanner(testPhp).nextLine());
-        }
-
-
-        /**
-         * Extract the php code snippet that defines phpVar from the php file phpFile. For example, to get $databases
-         * from settings.php: extractPhpVariable(DConfig.locateFile("settings.php", "$databases");
-         *
-         * PHP code: see parse.php.
-         *
-         * FIXME: if the file has something like "var_dump($databases);", the code would return "$databases);", which is incorrect.
-         * need to fix it in the next release.
-         *
-         * @param phpFile the PHP file to be processed.
-         * @param phpVar the PHP variable to be extracted. It can only be the canonical form $xxx, not $xxx['xxx'].
-         * @return the PHP code that defines phpVar.
-         */
-        public String extractVariable(File phpFile, String phpVar) throws DSystemExecutionException {
-            assert phpFile.isFile() && phpVar.matches("\\$\\w+");
-            final String phpExec = "<?php\n" +
-                    "function extract_variable($file, $var_name) {\n" +
-                    "  $content = file_get_contents($file);\n" +
-                    "  $tokens = token_get_all($content);\n" +
-                    "  $code = '';\n" +
-                    "\n" +
-                    "  $phase = 'skip';\n" +
-                    "  foreach ($tokens as $token) {\n" +
-                    "    if (is_array($token) && $token[0] == T_VARIABLE && $token[1] == $var_name) {\n" +
-                    "      $phase = 'accept';\n" +
-                    "      $code .= $token[1];\n" +
-                    "    }\n" +
-                    "    else if ($phase == 'accept') {\n" +
-                    "      $code .= is_array($token) ? $token[1] : $token;\n" +
-                    "      if ($token == ';') {\n" +
-                    "        $phase = 'skip';\n" +
-                    "        $code .= \"\\n\";\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "\n" +
-                    "  return $code;\n" +
-                    "}\n";
-
-            String code = String.format("%s\necho extract_variable('%s', '%s');",
-                    phpExec,
-                    phpFile.getAbsolutePath().replaceAll("'", "\\'"),
-                    phpVar);
-            return evaluate(code);
-        }
-    }
+//    /**
+//     * Utility class to run PHP snippet
+//     */
+//    public static class Php {
+//
+//        private final String phpExec;
+//
+//        public Php(String phpExec) throws DSystemExecutionException{
+//            assert StringUtils.isNotEmpty(phpExec);
+//            this.phpExec = phpExec;
+//            check();  // check validity of phpExec right away before doing any other things.
+//        }
+//
+//        public Php() throws DSystemExecutionException{
+//            this(new DConfig().getPhpExec());
+//        }
+//
+//        /**
+//         * Evaluates PHP code and return the output in JSON. JSR 223 should be the recommended approach, but there is no
+//         * good PHP engine. PHP-Java bridge is simply a wrapper of php-cgi and doesn't do much, and is not as flexible as
+//         * we call php exec. Quercus works well, but the jar file is too big to include here. In short, we'll simply call
+//         * PHP executable and get results in JSON. see [#1220194]
+//         *
+//         * @param phpCode PHP code snippet.
+//         * @return PHP code execution output.
+//         */
+//        public String evaluate(String phpCode) throws DSystemExecutionException {
+//            CommandLine commandLine = new CommandLine(phpExec);
+//            // we could suppress error. but this is not good because we want it generate errors when fails.
+//            // in command line "-d error_reporting=0", but here it didn't work.
+//            //commandLine.addArgument("-d error_reporting=0");
+//            commandLine.addArgument("--");  // execute input from shell.
+//            return DUtils.getInstance().executeShell(commandLine, null, phpCode);
+//        }
+//
+//        /**
+//         * Serialize a Java object into PHP serialize byte string.
+//         *
+//         * @param value
+//         * @return
+//         * @throws DSystemExecutionException
+//         */
+//        public byte[] serialize(Object value) throws DSystemExecutionException {
+//            String json = DUtils.Json.getInstance().toJson(value);
+//            CommandLine commandLine = new CommandLine(phpExec);
+//            commandLine.addArgument("-E");
+//            // first decode json, and then serialize it. needs to escape
+//            commandLine.addArgument("echo serialize(json_decode($argn));", false);
+//            return DUtils.getInstance().executeShell(commandLine, null, json.getBytes(), Charset.defaultCharset());
+//        }
+//
+//        private String unserializeToJson(byte[] serializedBytes) throws DSystemExecutionException {
+//            CommandLine commandLine = new CommandLine(phpExec);
+//            commandLine.addArgument("-E");
+//            // first unserialize php, and then encode into Json. needs to escape.
+//            commandLine.addArgument("echo json_encode(unserialize($argn));", false);
+//            return new String(DUtils.getInstance().executeShell(commandLine, null, serializedBytes, Charset.defaultCharset()));
+//        }
+//
+//        /**
+//         * Unserialize a PHP serialized byte string into a Java object.
+//         */
+//        public Object unserialize(byte[] serializedBytes) throws DSystemExecutionException {
+//            return DUtils.Json.getInstance().fromJson(unserializeToJson(serializedBytes));
+//        }
+//
+//        /**
+//         * FIXME: toClass can't handle "Type" cases.
+//         */
+//        public <T> T unserialize(byte[] serializedBytes, Class<T> toClass) throws DSystemExecutionException {
+//            return new Gson().fromJson(unserializeToJson(serializedBytes), toClass);
+//        }
+//
+//
+//        public void check() throws DSystemExecutionException {
+//            // test php executable
+//            String testPhp = getInstance().executeShell(phpExec + " -v");
+//            if (!testPhp.startsWith("PHP")) {
+//                throw new DSystemExecutionException("Cannot execute php executable: " + phpExec);
+//            }
+//            getInstance().logger.fine("Evaluate with PHP version: " + new Scanner(testPhp).nextLine());
+//        }
+//
+//
+//        /**
+//         * Extract the php code snippet that defines phpVar from the php file phpFile. For example, to get $databases
+//         * from settings.php: extractPhpVariable(DConfig.locateFile("settings.php", "$databases");
+//         *
+//         * PHP code: see parse.php.
+//         *
+//         * FIXME: if the file has something like "var_dump($databases);", the code would return "$databases);", which is incorrect.
+//         * need to fix it in the next release.
+//         *
+//         * @param phpFile the PHP file to be processed.
+//         * @param phpVar the PHP variable to be extracted. It can only be the canonical form $xxx, not $xxx['xxx'].
+//         * @return the PHP code that defines phpVar.
+//         */
+//        public String extractVariable(File phpFile, String phpVar) throws DSystemExecutionException {
+//            assert phpFile.isFile() && phpVar.matches("\\$\\w+");
+//            final String phpExec = "<?php\n" +
+//                    "function extract_variable($file, $var_name) {\n" +
+//                    "  $content = file_get_contents($file);\n" +
+//                    "  $tokens = token_get_all($content);\n" +
+//                    "  $code = '';\n" +
+//                    "\n" +
+//                    "  $phase = 'skip';\n" +
+//                    "  foreach ($tokens as $token) {\n" +
+//                    "    if (is_array($token) && $token[0] == T_VARIABLE && $token[1] == $var_name) {\n" +
+//                    "      $phase = 'accept';\n" +
+//                    "      $code .= $token[1];\n" +
+//                    "    }\n" +
+//                    "    else if ($phase == 'accept') {\n" +
+//                    "      $code .= is_array($token) ? $token[1] : $token;\n" +
+//                    "      if ($token == ';') {\n" +
+//                    "        $phase = 'skip';\n" +
+//                    "        $code .= \"\\n\";\n" +
+//                    "      }\n" +
+//                    "    }\n" +
+//                    "  }\n" +
+//                    "\n" +
+//                    "  return $code;\n" +
+//                    "}\n";
+//
+//            String code = String.format("%s\necho extract_variable('%s', '%s');",
+//                    phpExec,
+//                    phpFile.getAbsolutePath().replaceAll("'", "\\'"),
+//                    phpVar);
+//            return evaluate(code);
+//        }
+//    }
 
 
     /**
@@ -595,7 +548,7 @@ public class DUtils {
          * @param json the json string
          * @return json object in Bindings usually.
          */
-        public Object fromJson(String json) throws JsonIOException, JsonParseException, JsonSyntaxException {
+        public Object fromJson(String json) throws JsonParseException {
             if (StringUtils.isEmpty(json)) {
                 return null;
             }
@@ -663,87 +616,87 @@ public class DUtils {
     }
 
 
-    public static class Xmlrpc {
-        private final URL endpointUrl;
-        private final XmlRpcClient xmlrpcClient;
-        private final HttpClient httpClient;
-        private final int COOKIE_EXPIRE = 60 * 60 * 24 * 1000;  // 1-day of expiration.
-
-        public Xmlrpc(String endpoint) throws DConfigException {
-            try {
-                endpointUrl = new URL(endpoint);
-            } catch (MalformedURLException e) {
-                throw new DConfigException("Invalid endpoint.", e);
-            }
-
-            XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
-            config.setServerURL(endpointUrl);
-
-            xmlrpcClient = new XmlRpcClient();
-            httpClient = new HttpClient();
-            httpClient.getParams().setCookiePolicy(CookiePolicy.BROWSER_COMPATIBILITY);
-
-            XmlRpcCommonsTransportFactory factory = new XmlRpcCommonsTransportFactory(xmlrpcClient);
-            factory.setHttpClient(httpClient);
-            xmlrpcClient.setTransportFactory(factory);
-            xmlrpcClient.setConfig(config);
-        }
-
-        public Object execute(String method, Object... params) throws DSiteException {
-            assert StringUtils.isNotBlank(method);
-            if (ArrayUtils.isEmpty(params)) {
-                params = new Object[]{};
-            }
-            try {
-                return xmlrpcClient.execute(method, params);
-            } catch (XmlRpcException e) {
-                throw new DSiteException("Cannot execute XML-RPC method: " + method, e);
-            }
-        }
-
-        public Map login(String username, String password) throws DSiteException {
-            //printCookies();
-            // seems that cookies/session_id are set automatically.
-            Map result = (Map) execute("user.login", username, password);
-            //printCookies();
-
-            // so there's no need to manually set cookies again.
-            // but below is the code to set cookies/session_id if needed.
-
-            /*httpClient.getState().clearCookies();
-            httpClient.getState().addCookie(new Cookie(
-                    endpointUrl.getHost(),
-                    (String) result.get("session_name"),
-                    (String) result.get("sessid"),
-                    "/", COOKIE_EXPIRE, false));*/
-            //printCookies();
-
-            return (Map) result.get("user");
-        }
-
-        public boolean logout() throws DSiteException {
-            //printCookies();
-            boolean success = (Boolean) execute("user.logout");
-            //printCookies();
-
-            // when log out, cookies are cleared automatically. so no need to manually clear them.
-
-            //httpClient.getState().clearCookies();
-            return success;
-        }
-
-        public Map connect() throws DSiteException {
-            return (Map) execute("system.connect");
-        }
-
-        private void printCookies() {
-            System.out.print("Cookies: ");
-            for (Cookie cookie : httpClient.getState().getCookies()) {
-                System.out.print(cookie.toExternalForm() + "; ");
-            }
-            System.out.println("");
-        }
-
-    }
+//    public static class Xmlrpc {
+//        private final URL endpointUrl;
+//        private final XmlRpcClient xmlrpcClient;
+//        private final HttpClient httpClient;
+//        private final int COOKIE_EXPIRE = 60 * 60 * 24 * 1000;  // 1-day of expiration.
+//
+//        public Xmlrpc(String endpoint) throws DConfigException {
+//            try {
+//                endpointUrl = new URL(endpoint);
+//            } catch (MalformedURLException e) {
+//                throw new DConfigException("Invalid endpoint.", e);
+//            }
+//
+//            XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+//            config.setServerURL(endpointUrl);
+//
+//            xmlrpcClient = new XmlRpcClient();
+//            httpClient = new HttpClient();
+//            httpClient.getParams().setCookiePolicy(CookiePolicy.BROWSER_COMPATIBILITY);
+//
+//            XmlRpcCommonsTransportFactory factory = new XmlRpcCommonsTransportFactory(xmlrpcClient);
+//            factory.setHttpClient(httpClient);
+//            xmlrpcClient.setTransportFactory(factory);
+//            xmlrpcClient.setConfig(config);
+//        }
+//
+//        public Object execute(String method, Object... params) throws DSiteException {
+//            assert StringUtils.isNotBlank(method);
+//            if (ArrayUtils.isEmpty(params)) {
+//                params = new Object[]{};
+//            }
+//            try {
+//                return xmlrpcClient.execute(method, params);
+//            } catch (XmlRpcException e) {
+//                throw new DSiteException("Cannot execute XML-RPC method: " + method, e);
+//            }
+//        }
+//
+//        public Map login(String username, String password) throws DSiteException {
+//            //printCookies();
+//            // seems that cookies/session_id are set automatically.
+//            Map result = (Map) execute("user.login", username, password);
+//            //printCookies();
+//
+//            // so there's no need to manually set cookies again.
+//            // but below is the code to set cookies/session_id if needed.
+//
+//            /*httpClient.getState().clearCookies();
+//            httpClient.getState().addCookie(new Cookie(
+//                    endpointUrl.getHost(),
+//                    (String) result.get("session_name"),
+//                    (String) result.get("sessid"),
+//                    "/", COOKIE_EXPIRE, false));*/
+//            //printCookies();
+//
+//            return (Map) result.get("user");
+//        }
+//
+//        public boolean logout() throws DSiteException {
+//            //printCookies();
+//            boolean success = (Boolean) execute("user.logout");
+//            //printCookies();
+//
+//            // when log out, cookies are cleared automatically. so no need to manually clear them.
+//
+//            //httpClient.getState().clearCookies();
+//            return success;
+//        }
+//
+//        public Map connect() throws DSiteException {
+//            return (Map) execute("system.connect");
+//        }
+//
+//        private void printCookies() {
+//            System.out.print("Cookies: ");
+//            for (Cookie cookie : httpClient.getState().getCookies()) {
+//                System.out.print(cookie.toExternalForm() + "; ");
+//            }
+//            System.out.println("");
+//        }
+//
+//    }
 
 }

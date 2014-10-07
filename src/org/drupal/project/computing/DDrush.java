@@ -102,10 +102,10 @@ public class DDrush {
         }
     }
 
-    @Deprecated
-    public String getDrushExec() {
-        return getDrushString();
-    }
+//    @Deprecated
+//    public String getDrushExec() {
+//        return getDrushString();
+//    }
 
     public String getDrushString() {
         return drushCommand + ' ' + drushSiteAlias;

@@ -437,56 +437,56 @@ public class DConfig {
         return this.getProperty("dc.drush.site", "@self");
     }
 
-    /**
-     * Get the PHP executable from either -Ddrupal.php, or PHP_EXEC system variable.
-     * @return PHP executable if set, or "php".
-     */
-    public String getPhpExec() {
-        String defaultPhp = StringUtils.isEmpty(System.getenv("PHP_EXEC")) ? "php" : System.getenv("PHP_EXEC");
-        return properties.getProperty("drupal.php", defaultPhp);
-    }
+//    /**
+//     * Get the PHP executable from either -Ddrupal.php, or PHP_EXEC system variable.
+//     * @return PHP executable if set, or "php".
+//     */
+//    public String getPhpExec() {
+//        String defaultPhp = StringUtils.isEmpty(System.getenv("PHP_EXEC")) ? "php" : System.getenv("PHP_EXEC");
+//        return properties.getProperty("drupal.php", defaultPhp);
+//    }
 
-    /**
-     * Get the Xmlrpc endpoint setting.
-     * @return the Xmlrpc endpoint setting. Or null if not set.
-     */
-    public String getXmlrpcEndpoint() {
-        return properties.getProperty("drupal.xmlrpc.endpoint", null);
-    }
+//    /**
+//     * Get the Xmlrpc endpoint setting.
+//     * @return the Xmlrpc endpoint setting. Or null if not set.
+//     */
+//    public String getXmlrpcEndpoint() {
+//        return properties.getProperty("drupal.xmlrpc.endpoint", null);
+//    }
 
-    /**
-     * Find the Drupal root. Or throws exception if can't find it.
-     *
-     * @return The location of Drupal root. Only local Drupal root is permitted. Remote drupal site will throw exception.
-     * @throws DConfigException
-     */
-    public File getDrupalRoot() throws DConfigException {
-        // get the system property first.
-        String drupalRoot = this.getProperty("drupal.root", null);
-
-        // if not set, try system env
-        if (StringUtils.isBlank(drupalRoot)) {
-            drupalRoot = System.getenv("DRUPAL_ROOT");
-        }
-
-        // if still not set, try drush
-        if (StringUtils.isBlank(drupalRoot)) {
-            DDrush drush = new DDrush(getDrushCommand(), getDrushSiteAlias());
-            try {
-                drupalRoot = drush.execute(new String[]{"drupal-directory", "--local"}).trim();
-            } catch (DSiteException e) {}
-        }
-
-        if (StringUtils.isBlank(drupalRoot)) {
-            throw new DConfigException("Cannot find Drupal root.");
-        } else {
-            File drupalRootFile = new File(drupalRoot);
-            if (drupalRootFile.exists() && drupalRootFile.isDirectory()) {
-                return drupalRootFile.getAbsoluteFile();
-            } else {
-                throw new DConfigException("Drupal root does not exists or is not a directory.");
-            }
-        }
-    }
+//    /**
+//     * Find the Drupal root. Or throws exception if can't find it.
+//     *
+//     * @return The location of Drupal root. Only local Drupal root is permitted. Remote drupal site will throw exception.
+//     * @throws DConfigException
+//     */
+//    public File getDrupalRoot() throws DConfigException {
+//        // get the system property first.
+//        String drupalRoot = this.getProperty("drupal.root", null);
+//
+//        // if not set, try system env
+//        if (StringUtils.isBlank(drupalRoot)) {
+//            drupalRoot = System.getenv("DRUPAL_ROOT");
+//        }
+//
+//        // if still not set, try drush
+//        if (StringUtils.isBlank(drupalRoot)) {
+//            DDrush drush = new DDrush(getDrushCommand(), getDrushSiteAlias());
+//            try {
+//                drupalRoot = drush.execute(new String[]{"drupal-directory", "--local"}).trim();
+//            } catch (DSiteException e) {}
+//        }
+//
+//        if (StringUtils.isBlank(drupalRoot)) {
+//            throw new DConfigException("Cannot find Drupal root.");
+//        } else {
+//            File drupalRootFile = new File(drupalRoot);
+//            if (drupalRootFile.exists() && drupalRootFile.isDirectory()) {
+//                return drupalRootFile.getAbsoluteFile();
+//            } else {
+//                throw new DConfigException("Drupal root does not exists or is not a directory.");
+//            }
+//        }
+//    }
 
 }
