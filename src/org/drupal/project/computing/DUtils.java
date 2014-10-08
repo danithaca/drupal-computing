@@ -545,7 +545,7 @@ public class DUtils {
         }
 
         /**
-         * Parse a Json string into either a primitive, a list, or a map.
+         * Parse a Json string into either a null, a primitive (Number, String, Boolean), a list (ArrayList), or a map (Bindings).
          *
          * @param json the json string
          * @return json object in Bindings usually.

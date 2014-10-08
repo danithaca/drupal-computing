@@ -1,31 +1,30 @@
 package org.drupal.project.computing;
 
-import com.google.gson.JsonSyntaxException;
 import org.apache.commons.lang.StringUtils;
 import org.drupal.project.computing.exception.DConfigException;
 import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 
 import javax.script.Bindings;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Uses Drupal Services REST Server to access Drupal.
  */
 public class DServicesSite extends DSite implements DSiteExtended {
 
-    protected DServices services;
+    protected DRestfulJsonServices services;
 
-    public DServicesSite(DServices services) {
+    public DServicesSite(DRestfulJsonServices services) {
         this.services = services;
     }
 
     public static DServicesSite loadDefault() throws DConfigException {
-        return new DServicesSite(DServices.loadDefault());
+        return new DServicesSite(DRestfulJsonServices.loadDefault());
     }
 
-    public DServices getServices() {
+    public DRestfulJsonServices getServices() {
         return services;
     }
 
@@ -63,7 +62,7 @@ public class DServicesSite extends DSite implements DSiteExtended {
 
     @Override
     public void updateRecord(DRecord record) throws DSiteException {
-
+        //services.request("computing/")
     }
 
     @Override
@@ -77,27 +76,27 @@ public class DServicesSite extends DSite implements DSiteExtended {
             throw new IllegalArgumentException("DRecord object is not valid.");
         }
 
-        Bindings extraOptions = record.toBindings();
-        extraOptions.remove("id");
-        extraOptions.remove("application");
-        extraOptions.remove("command");
-        extraOptions.remove("label");
-        extraOptions.remove("input");
-
-        Properties params = new Properties();
-        params.put("application", record.getApplication());
-        params.put("command", record.getCommand());
-        params.put("label", StringUtils.isBlank(record.getLabel()) ? "Process " + record.getCommand() : record.getLabel());
-        if (record.getInput() != null) {
-            params.put("input", DUtils.Json.getInstance().toJson(record.getInput()));
-        }
-        if (!extraOptions.isEmpty()) {
-            params.put("options", DUtils.Json.getInstance().toJson(extraOptions));
-        }
+//        Bindings extraOptions = record.toBindings();
+//        extraOptions.remove("id");
+//        extraOptions.remove("application");
+//        extraOptions.remove("command");
+//        extraOptions.remove("label");
+//        extraOptions.remove("input");
+//
+//        Properties params = new Properties();
+//        params.put("application", record.getApplication());
+//        params.put("command", record.getCommand());
+//        params.put("label", StringUtils.isBlank(record.getLabel()) ? "Process " + record.getCommand() : record.getLabel());
+//        if (record.getInput() != null) {
+//            params.put("input", DUtils.Json.getInstance().toJson(record.getInput()));
+//        }
+//        if (!extraOptions.isEmpty()) {
+//            params.put("options", DUtils.Json.getInstance().toJson(extraOptions));
+//        }
 
         try {
             // execute request. for some reason this will return a List instead of just the number.
-            List idList = (List) services.request("computing.json", "POST", params);
+            List idList = services.request("computing.json", record.toBindings(), "POST", ArrayList.class);
             Long id = DUtils.getInstance().getLong(idList.get(0));
 
             if (id > 0) {
@@ -114,7 +113,7 @@ public class DServicesSite extends DSite implements DSiteExtended {
     public DRecord loadRecord(long id) throws DSiteException {
         connect();
         String requestString = String.format("computing/%d.json", id);
-        Bindings data = (Bindings) services.request(requestString, "GET", null);
+        Bindings data = services.request(requestString, null, "GET", Bindings.class);
         return DRecord.fromBindings(data);
     }
 
@@ -140,11 +139,7 @@ public class DServicesSite extends DSite implements DSiteExtended {
 
     private Bindings getSiteInfo() throws DSiteException {
         connect();
-        try {
-            return (Bindings) services.request("computing/info.json", "POST", null);
-        } catch (ClassCastException e) {
-            throw new DSiteException("Services results unexpected.", e);
-        }
+        return services.request("computing/info.json", null, "POST", Bindings.class);
     }
 
     @Override

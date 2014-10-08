@@ -56,6 +56,9 @@ public class DServicesSiteTest {
         Assert.assertTrue(recordId > 0);
         DRecord r2 = site.loadRecord(recordId);
         assertEquals((Long) 2L, r2.getWeight());
+
+        //r2.setWeight(3L);
+        //site.updateRecord(r2);
     }
 
     @After
