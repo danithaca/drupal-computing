@@ -36,6 +36,17 @@ public class DServicesSiteTest {
         assertTrue(time > 0);
     }
 
+    @Test
+    public void testExtended() throws DSiteException {
+        assertEquals("standard", site.variableGet("install_profile", "abc"));
+        assertEquals("abc", site.variableGet("install_profile1", "abc"));
+
+        site.variableSet("install_profile", "abc");
+        assertEquals("abc", site.variableGet("install_profile", "abc"));
+        site.variableSet("install_profile", "standard");
+        assertEquals("standard", site.variableGet("install_profile", "abc"));
+    }
+
     //@Test
     public void testCRUD1() throws DSiteException {
         DRecord r1 = site.loadRecord(1);

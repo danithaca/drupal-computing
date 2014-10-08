@@ -82,28 +82,20 @@ public class DServicesSite extends DSite implements DSiteExtended {
         }
         // we don't want to throw in extra "options"
 
-        try {
-            String requestString = String.format("computing/%d/finish.json", record.getId());
-            boolean success = getSingleElementFromList(services.request(requestString, params, "POST"), Boolean.class);
-            if (!success) {
-                throw new DSiteException("Cannot mark record as done: " + record.getId());
-            }
-        } catch (IllegalArgumentException e) {
-            throw new DSiteException("Cannot retrieve results.", e);
+        String requestString = String.format("computing/%d/finish.json", record.getId());
+        boolean success = getSingleElementFromList(services.request(requestString, params, "POST"), Boolean.class);
+        if (!success) {
+            throw new DSiteException("Cannot mark record as done: " + record.getId());
         }
     }
 
     @Override
     public void updateRecord(DRecord record) throws DSiteException {
         connect();
-        try {
-            String requestString = String.format("computing/%d.json", record.getId());
-            boolean success = getSingleElementFromList(services.request(requestString, record.toBindings(), "PUT"), Boolean.class);
-            if (!success) {
-                throw new DSiteException("Cannot update record: " + record.getId());
-            }
-        } catch (IllegalArgumentException e) {
-            throw new DSiteException("Cannot retrieve results.", e);
+        String requestString = String.format("computing/%d.json", record.getId());
+        boolean success = getSingleElementFromList(services.request(requestString, record.toBindings(), "PUT"), Boolean.class);
+        if (!success) {
+            throw new DSiteException("Cannot update record: " + record.getId());
         }
     }
 
@@ -113,19 +105,14 @@ public class DServicesSite extends DSite implements DSiteExtended {
         Bindings recordBindings = record.toBindings();
         assert recordBindings.containsKey(fieldName);
 
-        try {
-            String requestString = String.format("computing/%d/field.json", record.getId());
-            Bindings params = new SimpleBindings();
-            params.put("name", fieldName);
-            params.put("value", recordBindings.get(fieldName));
+        String requestString = String.format("computing/%d/field.json", record.getId());
+        Bindings params = new SimpleBindings();
+        params.put("name", fieldName);
+        params.put("value", recordBindings.get(fieldName));
 
-            boolean success = getSingleElementFromList(services.request(requestString, params, "POST"), Boolean.class);
-            if (!success) {
-                throw new DSiteException("Cannot update record on field: " + record.getId() + ", " + fieldName);
-            }
-
-        } catch (IllegalArgumentException e) {
-            throw new DSiteException("Cannot retrieve results.", e);
+        boolean success = getSingleElementFromList(services.request(requestString, params, "POST"), Boolean.class);
+        if (!success) {
+            throw new DSiteException("Cannot update record on field: " + record.getId() + ", " + fieldName);
         }
     }
 
@@ -135,16 +122,12 @@ public class DServicesSite extends DSite implements DSiteExtended {
             throw new IllegalArgumentException("DRecord object is not valid.");
         }
 
-        try {
-            // execute request. for some reason this will return a List instead of just the number.
-            Long id = getSingleElementFromList(services.request("computing.json", record.toBindings(), "POST"), Long.class);
-            if (id > 0) {
-                return id;
-            } else {
-                throw new DSiteException("Cannot create computing record with a valid ID.");
-            }
-        } catch (IllegalArgumentException e) {
-            throw new DSiteException("Cannot retrieve results.", e);
+        // execute request. for some reason this will return a List instead of just the number.
+        Long id = getSingleElementFromList(services.request("computing.json", record.toBindings(), "POST"), Long.class);
+        if (id > 0) {
+            return id;
+        } else {
+            throw new DSiteException("Cannot create computing record with a valid ID.");
         }
     }
 
@@ -183,15 +166,26 @@ public class DServicesSite extends DSite implements DSiteExtended {
 
     @Override
     public Object variableGet(String name, Object defaultValue) throws DSiteException, UnsupportedOperationException {
-        return null;
+        connect();
+        Bindings params = new SimpleBindings();
+        params.put("name", name);
+        params.put("default", defaultValue);
+
+        List<Object> list = (List<Object>) services.request("system/get_variable.json", params, "POST");
+        return list.get(0);
     }
 
     @Override
     public void variableSet(String name, Object value) throws DSiteException, UnsupportedOperationException {
+        connect();
+        Bindings params = new SimpleBindings();
+        params.put("name", name);
+        params.put("value", value);
 
+        services.request("system/set_variable.json", params, "POST");
     }
 
-    private <T> T getSingleElementFromList(Object aList, Class<T> classOfT) throws IllegalArgumentException {
+    private <T> T getSingleElementFromList(Object aList, Class<T> classOfT) throws DSiteException {
         try {
             Object element = ((List<Object>) aList).get(0);
             if (classOfT == Long.class) {
@@ -200,7 +194,7 @@ public class DServicesSite extends DSite implements DSiteExtended {
                 return (T) element;
             }
         } catch (ClassCastException | IndexOutOfBoundsException e) {
-            throw new IllegalArgumentException("Cannot get single element from the list.");
+            throw new DSiteException("Unexpected JSON result.", e);
         }
     }
 }
