@@ -122,6 +122,7 @@ public class DServicesSite extends DSite implements DSiteExtended {
             throw new IllegalArgumentException("DRecord object is not valid.");
         }
 
+        connect();
         // execute request. for some reason this will return a List instead of just the number.
         Long id = getSingleElementFromList(services.request("computing.json", record.toBindings(), "POST"), Long.class);
         if (id > 0) {
