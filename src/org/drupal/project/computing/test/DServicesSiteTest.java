@@ -4,6 +4,7 @@ import junit.framework.Assert;
 import org.drupal.project.computing.DRecord;
 import org.drupal.project.computing.DServicesSite;
 import org.drupal.project.computing.exception.DConfigException;
+import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +36,7 @@ public class DServicesSiteTest {
         assertTrue(time > 0);
     }
 
-    @Test
+    //@Test
     public void testCRUD1() throws DSiteException {
         DRecord r1 = site.loadRecord(1);
         System.out.println(r1.toJson());
@@ -57,8 +58,51 @@ public class DServicesSiteTest {
         DRecord r2 = site.loadRecord(recordId);
         assertEquals((Long) 2L, r2.getWeight());
 
-        //r2.setWeight(3L);
-        //site.updateRecord(r2);
+        r2.setWeight(3L);
+        site.updateRecord(r2);
+        DRecord r3 = site.loadRecord(recordId);
+        assertEquals((Long) 3L, r3.getWeight());
+
+        r3.setWeight(4L);
+        site.updateRecordField(r3, "weight");
+        DRecord r4 = site.loadRecord(recordId);
+        assertEquals((Long) 4L, r4.getWeight());
+
+        r4.setOutput(input);
+        site.updateRecordField(r4, "output");
+        DRecord r5 = site.loadRecord(recordId);
+        assertEquals("hello, world", r5.getOutput().get("message"));
+    }
+
+    @Test
+    public void testCRUD3() throws DSiteException {
+        Bindings input = new SimpleBindings();
+        input.put("message", "hello, world");
+        input.put("test", 1);
+        DRecord record = new DRecord("unittest", "Echo", "Test Echo", input);
+        record.setWeight(2L);
+        System.out.println("Created record: " + record.toJson());
+
+        long recordId = site.createRecord(record);
+        Assert.assertTrue(recordId > 0);
+
+        try {
+            DRecord r2 = site.claimRecord("unittest");
+            assertEquals((Long) 2L, r2.getWeight());
+            r2.setMessage("Done");
+            site.finishRecord(r2);
+            DRecord r4 = site.loadRecord(recordId);
+            assertEquals("Done", r4.getMessage());
+        } catch (DNotFoundException e) {
+            assertTrue(false);
+        }
+
+        try {
+            DRecord r3 = site.claimRecord("unittest");
+            assertTrue(false);
+        } catch (DNotFoundException e) {
+            assertTrue(true);
+        }
     }
 
     @After

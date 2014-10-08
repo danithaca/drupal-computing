@@ -6,6 +6,7 @@ import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 
 import javax.script.Bindings;
+import javax.script.SimpleBindings;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,22 +53,80 @@ public class DServicesSite extends DSite implements DSiteExtended {
 
     @Override
     public DRecord claimRecord(String appName) throws DSiteException, DNotFoundException {
-        return null;
+        connect();
+        Bindings params = new SimpleBindings();
+        params.put("application", appName);
+
+        Object response = services.request("computing/claim.json", params, "POST");
+        if (response instanceof ArrayList) {
+            boolean found = getSingleElementFromList(response, Boolean.class);
+            if (!found) {
+                throw new DNotFoundException("No more READY record for application: " + appName);
+            } else {
+                throw new DSiteException("Illegal response from Drupal.");
+            }
+        } else {
+            Bindings recordBindings = (Bindings) response;
+            return DRecord.fromBindings(recordBindings);
+        }
     }
 
     @Override
     public void finishRecord(DRecord record) throws DSiteException {
+        connect();
+        Bindings params = new SimpleBindings();
+        params.put("status", record.getStatus());
+        params.put("message", record.getMessage());
+        if (record.getOutput() != null) {
+            params.put("output", record.getOutput());
+        }
+        // we don't want to throw in extra "options"
 
+        try {
+            String requestString = String.format("computing/%d/finish.json", record.getId());
+            boolean success = getSingleElementFromList(services.request(requestString, params, "POST"), Boolean.class);
+            if (!success) {
+                throw new DSiteException("Cannot mark record as done: " + record.getId());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new DSiteException("Cannot retrieve results.", e);
+        }
     }
 
     @Override
     public void updateRecord(DRecord record) throws DSiteException {
-        //services.request("computing/")
+        connect();
+        try {
+            String requestString = String.format("computing/%d.json", record.getId());
+            boolean success = getSingleElementFromList(services.request(requestString, record.toBindings(), "PUT"), Boolean.class);
+            if (!success) {
+                throw new DSiteException("Cannot update record: " + record.getId());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new DSiteException("Cannot retrieve results.", e);
+        }
     }
 
     @Override
     public void updateRecordField(DRecord record, String fieldName) throws DSiteException {
+        connect();
+        Bindings recordBindings = record.toBindings();
+        assert recordBindings.containsKey(fieldName);
 
+        try {
+            String requestString = String.format("computing/%d/field.json", record.getId());
+            Bindings params = new SimpleBindings();
+            params.put("name", fieldName);
+            params.put("value", recordBindings.get(fieldName));
+
+            boolean success = getSingleElementFromList(services.request(requestString, params, "POST"), Boolean.class);
+            if (!success) {
+                throw new DSiteException("Cannot update record on field: " + record.getId() + ", " + fieldName);
+            }
+
+        } catch (IllegalArgumentException e) {
+            throw new DSiteException("Cannot retrieve results.", e);
+        }
     }
 
     @Override
@@ -76,36 +135,16 @@ public class DServicesSite extends DSite implements DSiteExtended {
             throw new IllegalArgumentException("DRecord object is not valid.");
         }
 
-//        Bindings extraOptions = record.toBindings();
-//        extraOptions.remove("id");
-//        extraOptions.remove("application");
-//        extraOptions.remove("command");
-//        extraOptions.remove("label");
-//        extraOptions.remove("input");
-//
-//        Properties params = new Properties();
-//        params.put("application", record.getApplication());
-//        params.put("command", record.getCommand());
-//        params.put("label", StringUtils.isBlank(record.getLabel()) ? "Process " + record.getCommand() : record.getLabel());
-//        if (record.getInput() != null) {
-//            params.put("input", DUtils.Json.getInstance().toJson(record.getInput()));
-//        }
-//        if (!extraOptions.isEmpty()) {
-//            params.put("options", DUtils.Json.getInstance().toJson(extraOptions));
-//        }
-
         try {
             // execute request. for some reason this will return a List instead of just the number.
-            List idList = services.request("computing.json", record.toBindings(), "POST", ArrayList.class);
-            Long id = DUtils.getInstance().getLong(idList.get(0));
-
+            Long id = getSingleElementFromList(services.request("computing.json", record.toBindings(), "POST"), Long.class);
             if (id > 0) {
                 return id;
             } else {
                 throw new DSiteException("Cannot create computing record with a valid ID.");
             }
-        } catch (ClassCastException | IndexOutOfBoundsException | IllegalArgumentException e) {
-            throw new DSiteException("Services results unexpected.", e);
+        } catch (IllegalArgumentException e) {
+            throw new DSiteException("Cannot retrieve results.", e);
         }
     }
 
@@ -150,5 +189,18 @@ public class DServicesSite extends DSite implements DSiteExtended {
     @Override
     public void variableSet(String name, Object value) throws DSiteException, UnsupportedOperationException {
 
+    }
+
+    private <T> T getSingleElementFromList(Object aList, Class<T> classOfT) throws IllegalArgumentException {
+        try {
+            Object element = ((List<Object>) aList).get(0);
+            if (classOfT == Long.class) {
+                return (T) DUtils.getInstance().getLong(element);
+            } else {
+                return (T) element;
+            }
+        } catch (ClassCastException | IndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Cannot get single element from the list.");
+        }
     }
 }

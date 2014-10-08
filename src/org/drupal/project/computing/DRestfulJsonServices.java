@@ -144,7 +144,7 @@ public class DRestfulJsonServices {
             return classOfT.cast(result);
         } catch (ClassCastException e) {
             e.printStackTrace();
-            throw new DSiteException("Unexpected JSON result type: " + result.getClass().getSimpleName());
+            throw new DSiteException("Unexpected JSON result type: " + result.getClass().getSimpleName() + ". Failure might be caused by the Drupal end.");
         }
     }
 
@@ -206,12 +206,18 @@ public class DRestfulJsonServices {
                     responseStream.close();
                 }
             } else {
-                String errorMessage = null;
+                String responseError = null;
                 InputStream errorStream = connection.getErrorStream();
                 if (errorStream != null) {
-                    errorMessage = DUtils.getInstance().readContent(errorStream);
+                    responseError = DUtils.getInstance().readContent(errorStream);
                 }
-                DSiteException e = new DSiteException("HTTP response code is not OK. Code: " + responseCode + ". Message: " + errorMessage);
+                StringBuilder errorMessage = new StringBuilder();
+                errorMessage.append("HTTP response code is not OK. Code: ").append(responseCode).
+                        append(". Message: ").append(responseError).append(". ");
+                if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                    errorMessage.append("Possible reason: Services endpoint not enabled.");
+                }
+                DSiteException e = new DSiteException(errorMessage.toString());
                 e.setErrorCode(responseCode);
                 throw e;
             }
