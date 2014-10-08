@@ -1,9 +1,7 @@
 package org.drupal.project.computing;
 
 import org.apache.commons.lang3.StringUtils;
-import org.drupal.project.computing.exception.DCommandExecutionException;
-import org.drupal.project.computing.exception.DNotFoundException;
-import org.drupal.project.computing.exception.DSiteException;
+import org.drupal.project.computing.exception.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -59,11 +57,18 @@ abstract public class DApplication {
 
         switch (config.getProperty("dc.site.access", "drush")) {
             case "services":
-                // set site to be services.
+                logger.info("Using Services module for Drupal site access.");
+                try {
+                    site = DServicesSite.loadDefault();
+                } catch (DConfigException e) {
+                    e.printStackTrace();
+                    logger.severe("Cannot get Services settings.");
+                    throw new DRuntimeException(e);
+                }
                 break;
             case "drush":
             default:
-                logger.finest("Initializing connection to Drupal via Drush.");
+                logger.info("Initializing connection to Drupal via Drush.");
                 site = DDrushSite.loadDefault();
                 break;
         }
