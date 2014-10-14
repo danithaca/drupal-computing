@@ -17,7 +17,7 @@ import javax.script.Bindings;
 import javax.script.SimpleBindings;
 import java.io.*;
 import java.math.BigDecimal;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
@@ -161,31 +161,29 @@ public class DUtils {
         }
     }*/
 
-//    /**
-//     * Retrieve the first valid MAC address as the Machine ID. We just trust that the order remains the same all the time.
-//     * If there's no valid MAC address, return null.
-//     * TODO: read DConfig too, eg. -Ddrupal.agent
-//     * @return Machine ID (as MAC address) or null.
-//     */
-//    public String getMachineId() {
-//        String id = null;
-//        try {
-//            // we can only hope the order of the enumeration remains the same each time we call.
-//            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-//            while (interfaces.hasMoreElements()) {
-//                NetworkInterface networkInterface = interfaces.nextElement();
-//                // System.out.println(networkInterface.getName());
-//                byte[] mac = networkInterface.getHardwareAddress();
-//                if (mac != null) {
-//                    id = Hex.encodeHexString(mac);
-//                    break;
-//                }
-//            }
-//        } catch (SocketException e) {
-//            e.printStackTrace();
-//        }
-//        return id;
-//    }
+
+    /**
+     * Retrieve the agent name either from config.properties, or from host name, or set as "Unknown".
+     *
+     * @return the agent name.
+     */
+    public String getAgentName() {
+        DConfig config = DConfig.loadDefault();
+        String agentName = config.getProperty("dc.agent.name", "");
+
+        if (agentName.length() == 0) {
+            logger.info("Cannot find agent name. Use host name instead.");
+            try {
+                agentName = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+                logger.info("Cannot find host name. Use MAC address instead.");
+                agentName = "Unknown";
+            }
+        }
+
+        return agentName;
+    }
 
 
     /**

@@ -87,6 +87,35 @@ abstract public class DApplication {
         launchSingleThread();
     }
 
+    /**
+     * Run a command based on the given record.
+     * This is usually used as a programmatic entry to create a record and run it all at once.
+     *
+     * @param record Could be a newly created record or an existing record from Drupal. If record is new, create it in Drupal first.
+     */
+    public void runOnce(DRecord record) {
+        assert record != null && site != null;
+
+        try {
+            // check if record is new: then save it first.
+            if (record.isNew()) {
+                record.setStatus(DRecord.Status.RUN); // set record to be in "RUN" status.
+                logger.info("Saving new record to Drupal: " + record.toJson());
+                long id = site.createRecord(record);
+                record = site.loadRecord(id);
+            }
+
+            // process record.
+            processRecord(record);
+            // save result
+            site.finishRecord(record);
+
+        } catch (DSiteException e) {
+            e.printStackTrace();
+            logger.severe("Drupal site error: " + e.getMessage());
+        }
+    }
+
 
     /**
      * Allow register command mapping ad-hoc.
@@ -222,7 +251,7 @@ abstract public class DApplication {
 
             } catch (DSiteException e) {
                 e.printStackTrace();
-                logger.severe("Connect Drupal site error: " + e.getMessage());
+                logger.severe("Drupal site error: " + e.getMessage());
                 // TODO: try to write error into record.
 
                 break;

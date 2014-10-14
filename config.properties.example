@@ -22,3 +22,6 @@ dc.drush.site = @local
 ; dc.services.endpoint = endpoint
 ; dc.services.user.name = scott
 ; dc.services.user.pass = tiger
+
+; agent settings.
+; dc.agent.name = james.bond.007

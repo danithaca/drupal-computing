@@ -2,7 +2,7 @@ package org.drupal.project.computing;
 
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 
