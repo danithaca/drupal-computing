@@ -20,7 +20,7 @@ public class EchoCommand extends DCommand {
 
     @Override
     public void execute() throws DCommandExecutionException {
-        result.put("pong", (pingString == null) ? "Hello, World" : pingString);
+        result.put("pong", (pingString == null) ? "N/A" : pingString);
         message.append("Echo successful.");
     }
 
