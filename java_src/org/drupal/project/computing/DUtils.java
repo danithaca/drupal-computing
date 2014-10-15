@@ -131,7 +131,6 @@ public class DUtils {
      * @param command The list of command and parameters.
      * @param workingDir The working directory. Could be null. The it's default user.dir.
      * @return command output.
-     * @deprecated In favor of the other executeShell with Apache.Commons.Exec.
      */
     /*@Deprecated
     public String executeShell(List<String> command, File workingDir) {
