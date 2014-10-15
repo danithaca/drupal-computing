@@ -2,6 +2,7 @@ package org.drupal.project.computing;
 
 import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.exception.DConfigException;
+import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 
 import java.io.*;
@@ -129,6 +130,43 @@ public class DConfig {
         properties.setProperty(propertyName, value);
     }
 
+
+    /**
+     * Try to read "dc.database.url" in config.properties or system env. Throws exception if can't find.
+     * @return The database url string that can be used directly in JDBC connections.
+     * @throws DConfigException
+     * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-usagenotes-connect-drivermanager.html">Simple MySQL example</a>
+     * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html">MySQL connection properties</a>
+     */
+    public String getDatabaseUrl() throws DConfigException {
+        String url = getProperty("dc.database.url", "");
+        if (StringUtils.isNotBlank(url)) {
+            return url;
+        } else {
+            throw new DConfigException("Cannot find 'dc.database.url' settings.");
+        }
+    }
+
+
+    /**
+     * Try to read "dc.database.properties.*" in config.properties.
+     * @return The database properties as defined in dc.database.properties.*. Or throws DNotFoundException.
+     * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-usagenotes-connect-drivermanager.html">Simple MySQL example</a>
+     * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html">MySQL connection properties</a>
+     */
+    public Properties getDatabaseProperties() throws DNotFoundException {
+        Properties dbProperties = new Properties();
+        for (String key : properties.stringPropertyNames()) {
+            if (key.startsWith("dc.database.properties.")) {
+                dbProperties.put(key.substring("dc.database.properties.".length()), properties.getProperty(key));
+            }
+        }
+        if (!dbProperties.isEmpty()) {
+            return dbProperties;
+        } else {
+            throw new DNotFoundException("Cannot find database configuration properties.");
+        }
+    }
 
 
     /**

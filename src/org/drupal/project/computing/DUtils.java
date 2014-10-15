@@ -381,6 +381,20 @@ public class DUtils {
         return ReflectionToStringBuilder.toString(object);
     }
 
+    /**
+     * Convert a Bindings object (usually from JSON object) into a Properties object using toString() approach.
+     * @param bindings
+     * @return
+     */
+    public Properties bindingsToProperties(Bindings bindings) {
+        assert bindings != null;
+        Properties properties = new Properties();
+        for (String key : bindings.keySet()) {
+            properties.put(key, bindings.get(key).toString());
+        }
+        return properties;
+    }
+
 //    /**
 //     * Utility class to run PHP snippet
 //     */

@@ -25,3 +25,10 @@ dc.drush.site = @local
 
 ; agent settings.
 ; dc.agent.name = james.bond.007
+
+; optional database settings.
+; dc.database.url = jdbc:mysql://localhost/test?user=monty&password=greatsqldb
+
+; optional database properties.
+; dc.database.properties.useCompression = true
+; dc.database.properties.* = xxx
