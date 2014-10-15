@@ -11,6 +11,7 @@ import javax.script.SimpleBindings;
 import java.util.logging.Level;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 /**
  * Test DApplication and DCommand
@@ -22,7 +23,7 @@ public class DApplicationTest {
     @Before
     public void setUp() {
         DUtils.getInstance().getPackageLogger().setLevel(Level.ALL);
-        application = new ComputingApplication("computing");
+        application = new ComputingApplication();
         site = application.getSite();
     }
 
@@ -74,5 +75,16 @@ public class DApplicationTest {
 
         d4 = site.loadRecord(id4);
         assertEquals(DRecord.Status.FLD, d4.getStatus());
+    }
+
+    @Test
+    public void testRunOnce() throws DSiteException {
+        Bindings input1 = new SimpleBindings();
+        input1.put("ping", "hello");
+        DRecord r = new DRecord("computing", "Echo", "JUnitTest", input1);
+        DApplication app = new ComputingApplication();
+        DRecord r2 = app.runOnce(r);
+        assertTrue(!r2.isNew());
+        assertEquals("hello", r2.getOutput().get("pong"));
     }
 }

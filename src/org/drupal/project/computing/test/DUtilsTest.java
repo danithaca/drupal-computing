@@ -183,7 +183,7 @@ public class DUtilsTest {
         System.out.println(encoded);
         assertEquals("abc=hello+world&def=haha%2Chaha", encoded);
 
-        //System.out.println(DUtils.getInstance().getMachineId());
+        System.out.println(DUtils.getInstance().getAgentName());
     }
 
 

@@ -7,14 +7,15 @@ import java.util.Properties;
 
 public class ComputingApplication extends DApplication {
 
-    public ComputingApplication(String applicationName) {
-        super(applicationName);
+    public ComputingApplication() {
+        super("computing");
     }
 
     @Override
     protected Properties registerDefaultCommandMapping() {
         Properties defaultCommandMapping = new Properties();
         defaultCommandMapping.put("Echo", "org.drupal.project.computing.common.EchoCommand");
+        defaultCommandMapping.put("echo", "org.drupal.project.computing.common.EchoCommand");
         return defaultCommandMapping;
     }
 
@@ -24,7 +25,7 @@ public class ComputingApplication extends DApplication {
      * All configurations should be handled in dc.config.file.
      */
     public static void main(String[] args) {
-        DApplication application = new ComputingApplication("computing");
+        DApplication application = new ComputingApplication();
         application.launch();
     }
 }
