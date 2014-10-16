@@ -63,10 +63,10 @@ public class DRestfulJsonServices {
      */
     public static DRestfulJsonServices loadDefault() throws DConfigException {
         DConfig config = DConfig.loadDefault();
-        String baseUrl = config.getProperty("dc.site.base_url", "");
-        String endpoint = config.getProperty("dc.services.endpoint", "");
-        String userName = config.getProperty("dc.services.user.name", "");
-        String userPass = config.getProperty("dc.services.user.pass", "");
+        String baseUrl = config.getProperty("dcomp.site.base_url", "");
+        String endpoint = config.getProperty("dcomp.services.endpoint", "");
+        String userName = config.getProperty("dcomp.services.user.name", "");
+        String userPass = config.getProperty("dcomp.services.user.pass", "");
 
         if (StringUtils.isNotBlank(baseUrl) && StringUtils.isNotBlank(endpoint) && StringUtils.isNotBlank(userName) && StringUtils.isNotBlank(userPass)) {
             return new DRestfulJsonServices(baseUrl, endpoint, userName, userPass);

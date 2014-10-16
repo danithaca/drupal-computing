@@ -50,12 +50,12 @@ abstract public class DApplication {
         this.applicationName = applicationName;
 
         this.config = DConfig.loadDefault();
-        logger.finest("Loaded (or tried to load) configuration file: " + config.getProperty("dc.config.file", "config.properties"));
+        logger.finest("Loaded (or tried to load) configuration file: " + config.getProperty("dcomp.config.file", "config.properties"));
 
         this.commandMapping = this.registerCommandMapping();
         logger.finest("Built command mapping, allowed commands: " + StringUtils.join(commandMapping.propertyNames(), ","));
 
-        switch (config.getProperty("dc.site.access", "drush")) {
+        switch (config.getProperty("dcomp.site.access", "drush")) {
             case "services":
                 logger.info("Using Services module for Drupal site access.");
                 try {
@@ -277,7 +277,7 @@ abstract public class DApplication {
         commandMapping.putAll(registerDefaultCommandMapping());
 
         // second, check mapping from command.properties.
-        String commandFileName = config.getProperty("dc.command.file", "command.properties");
+        String commandFileName = config.getProperty("dcomp.command.file", "command.properties");
         Properties commandMappingOverride = new Properties();
 
         // try to get file

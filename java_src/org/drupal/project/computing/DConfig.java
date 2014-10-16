@@ -58,8 +58,8 @@ public class DConfig {
         // load config file only when needed.
         if (reload || defaultConfig == null) {
             DConfig config = new DConfig();
-            // "dc.config.file" can only get set as ENVIRONMENT or system properties.
-            String configFileName = config.getProperty("dc.config.file", "config.properties");
+            // "dcomp.config.file" can only get set as ENVIRONMENT or system properties.
+            String configFileName = config.getProperty("dcomp.config.file", "config.properties");
             Reader configFileReader = null;
 
             // try to locate config file.
@@ -132,33 +132,33 @@ public class DConfig {
 
 
     /**
-     * Try to read "dc.database.url" in config.properties or system env. Throws exception if can't find.
+     * Try to read "dcomp.database.url" in config.properties or system env. Throws exception if can't find.
      * @return The database url string that can be used directly in JDBC connections.
      * @throws DConfigException
      * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-usagenotes-connect-drivermanager.html">Simple MySQL example</a>
      * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html">MySQL connection properties</a>
      */
     public String getDatabaseUrl() throws DConfigException {
-        String url = getProperty("dc.database.url", "");
+        String url = getProperty("dcomp.database.url", "");
         if (StringUtils.isNotBlank(url)) {
             return url;
         } else {
-            throw new DConfigException("Cannot find 'dc.database.url' settings.");
+            throw new DConfigException("Cannot find 'dcomp.database.url' settings.");
         }
     }
 
 
     /**
-     * Try to read "dc.database.properties.*" in config.properties.
-     * @return The database properties as defined in dc.database.properties.*. Or throws DNotFoundException.
+     * Try to read "dcomp.database.properties.*" in config.properties.
+     * @return The database properties as defined in dcomp.database.properties.*. Or throws DNotFoundException.
      * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-usagenotes-connect-drivermanager.html">Simple MySQL example</a>
      * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html">MySQL connection properties</a>
      */
     public Properties getDatabaseProperties() throws DNotFoundException {
         Properties dbProperties = new Properties();
         for (String key : properties.stringPropertyNames()) {
-            if (key.startsWith("dc.database.properties.")) {
-                dbProperties.put(key.substring("dc.database.properties.".length()), properties.getProperty(key));
+            if (key.startsWith("dcomp.database.properties.")) {
+                dbProperties.put(key.substring("dcomp.database.properties.".length()), properties.getProperty(key));
             }
         }
         if (!dbProperties.isEmpty()) {
@@ -465,14 +465,14 @@ public class DConfig {
      * @return The drush executable command.
      */
     public String getDrushCommand() {
-        return this.getProperty("dc.drush.command", "drush");
+        return this.getProperty("dcomp.drush.command", "drush");
     }
 
     /**
      * @return The default drush site alias. Users should include "@" in the config file.
      */
     public String getDrushSiteAlias() {
-        return this.getProperty("dc.drush.site", "@self");
+        return this.getProperty("dcomp.drush.site", "@self");
     }
 
 //    /**

@@ -168,7 +168,7 @@ public class DUtils {
      */
     public String getAgentName() {
         DConfig config = DConfig.loadDefault();
-        String agentName = config.getProperty("dc.agent.name", "");
+        String agentName = config.getProperty("dcomp.agent.name", "");
 
         if (agentName.length() == 0) {
             logger.info("Cannot find agent name. Use host name instead.");
@@ -231,7 +231,7 @@ public class DUtils {
         executor.setExitValue(0);
 
         // handle timeout. default 2 minutes.
-        int timeout = new Integer(DConfig.loadDefault().getProperty("dc.exec.timeout", "120000"));
+        int timeout = new Integer(DConfig.loadDefault().getProperty("dcomp.exec.timeout", "120000"));
         ExecuteWatchdog watchdog = new ExecuteWatchdog(timeout);
         executor.setWatchdog(watchdog);
 

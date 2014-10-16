@@ -22,7 +22,7 @@ public class ComputingApplication extends DApplication {
 
     /**
      * Currently we don't take command line input.
-     * All configurations should be handled in dc.config.file.
+     * All configurations should be handled in dcomp.config.file.
      */
     public static void main(String[] args) {
         DApplication application = new ComputingApplication();
