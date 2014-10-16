@@ -1,8 +1,13 @@
 import os
+import subprocess
 import sys
 import socket
 import re
 import logging
+import json
+from io import StringIO, TextIOWrapper
+import traceback
+from .exceptions import DSiteException
 
 __author__ = 'Daniel Zhou'
 
@@ -72,6 +77,43 @@ class DDrush():
     def __init__(self, drush_command, site_alias):
         self.drush_command = drush_command
         self.site_alias = site_alias
+
+    def execute(self, extra_args=[], input_string=None):
+        """
+        This does not handle possible exceptions. Caller functions should take care of them.
+        Might throw:CalledProcessError, TimeExpired
+        """
+        config = load_default_config()
+        timeout = int(config.get('dcomp.exec.timeout', 120000))
+
+        all_args = [self.drush_command, self.site_alias]
+        if extra_args is not None:
+            all_args.extend(extra_args)
+
+        # TODO: handle error output and exceptions.
+        return subprocess.check_output(all_args, input=input_string, universal_newlines=True, timeout=timeout)
+
+    def computing_call(self, *args):
+        call_args = ['computing-call', '--pipe']
+        for arg in call_args:
+            call_args.append(json.dumps(arg))
+        return self.execute(call_args)
+
+    def computing_eval(self, code):
+        eval_args = ['computing-eval', '--pipe', '-']
+        return self.execute(eval_args, code)
+
+
+_default_drush = None
+
+
+def load_default_drush(reload=False):
+    global _default_drush
+    # lazy initialization
+    if _default_drush is None or reload:
+        config = load_default_config()
+        _default_drush = DDrush(config.get_drush_command(), config.get_drush_site_alias())
+    return _default_drush
 
 
 def check_python_version():
