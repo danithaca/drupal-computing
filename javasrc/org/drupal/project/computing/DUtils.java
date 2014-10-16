@@ -162,30 +162,6 @@ public class DUtils {
 
 
     /**
-     * Retrieve the agent name either from config.properties, or from host name, or set as "Unknown".
-     *
-     * @return the agent name.
-     */
-    public String getAgentName() {
-        DConfig config = DConfig.loadDefault();
-        String agentName = config.getProperty("dcomp.agent.name", "");
-
-        if (agentName.length() == 0) {
-            logger.info("Cannot find agent name. Use host name instead.");
-            try {
-                agentName = InetAddress.getLocalHost().getHostName();
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                logger.info("Cannot find host name. Use MAC address instead.");
-                agentName = "Unknown";
-            }
-        }
-
-        return agentName;
-    }
-
-
-    /**
      * Execute a command in the working dir, and return the output as a String. If error, log the errors in logger.
      * TODO: check to make sure it won't output confidential information from settings.php, etc.
      *

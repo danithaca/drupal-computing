@@ -183,8 +183,6 @@ public class DUtilsTest {
         System.out.println(encoded);
         assertEquals("abc=hello+world&def=haha%2Chaha", encoded);
 
-        System.out.println(DUtils.getInstance().getAgentName());
-
         Bindings bi = new SimpleBindings();
         bi.put("k1", 1);
         bi.put("k2", "2");
@@ -193,6 +191,9 @@ public class DUtilsTest {
         assertEquals("1", p.getProperty("k1"));
         assertEquals("2", p.getProperty("k2"));
         assertEquals("true", p.getProperty("k3"));
+
+        DConfig config = DConfig.loadDefault();
+        System.out.println(config.getAgentName());
     }
 
 

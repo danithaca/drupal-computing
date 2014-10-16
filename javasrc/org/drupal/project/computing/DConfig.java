@@ -6,6 +6,8 @@ import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -473,6 +475,29 @@ public class DConfig {
      */
     public String getDrushSiteAlias() {
         return this.getProperty("dcomp.drush.site", "@self");
+    }
+
+
+    /**
+     * Retrieve the agent name either from config.properties, or from host name, or set as "Unknown".
+     *
+     * @return the agent name.
+     */
+    public String getAgentName() {
+        String agentName = getProperty("dcomp.agent.name", "");
+
+        if (agentName.length() == 0) {
+            logger.info("Cannot find agent name. Use host name instead.");
+            try {
+                agentName = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+                logger.info("Cannot find host name. Use MAC address instead.");
+                agentName = "Unknown";
+            }
+        }
+
+        return agentName;
     }
 
 //    /**
