@@ -93,15 +93,32 @@ class DDrush():
         # TODO: handle error output and exceptions.
         return subprocess.check_output(all_args, input=input_string, universal_newlines=True, timeout=timeout)
 
-    def computing_call(self, *args):
-        call_args = ['computing-call', '--pipe']
-        for arg in call_args:
-            call_args.append(json.dumps(arg))
-        return self.execute(call_args)
+    def computing_call_raw(self, func_name, *args):
+        calls = ['computing-call', '--pipe', func_name]
+        for arg in args:
+            calls.append(json.dumps(arg))
+        return self.execute(calls)
 
-    def computing_eval(self, code):
+    def computing_call(self, func_name, *args):
+        json_result = self.computing_call_raw(func_name, *args)
+        return json.loads(json_result)
+
+    def computing_eval_raw(self, code):
         eval_args = ['computing-eval', '--pipe', '-']
         return self.execute(eval_args, code)
+
+    def computing_eval(self, code):
+        json_result = self.computing_eval_raw(code)
+        return json.loads(json_result)
+
+    def get_core_status(self):
+        return json.loads(self.execute(["core-status", "--pipe", "--format=json"]))
+
+    def get_drush_string(self):
+        return "%s %s" % (self.drush_command, self.site_alias)
+
+    def get_version(self):
+        return self.execute(["version", "--pipe"]).strip()
 
 
 _default_drush = None
@@ -114,6 +131,18 @@ def load_default_drush(reload=False):
         config = load_default_config()
         _default_drush = DDrush(config.get_drush_command(), config.get_drush_site_alias())
     return _default_drush
+
+
+class DRestfulJsonServices():
+    def __init__(self, base_url, endpoint, username, password):
+        self.base_url = base_url
+        self.endpoint = endpoint
+        self.username = username
+        self.password = password
+        self.services_endpoint = "%s/%s" % (base_url, endpoint)
+
+
+
 
 
 def check_python_version():
