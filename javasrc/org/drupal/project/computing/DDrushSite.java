@@ -135,7 +135,7 @@ public class DDrushSite extends DSite implements DSiteExtended {
 
     @Override
     public DRecord claimRecord(String appName) throws DSiteException, DNotFoundException {
-        String jsonResult = drush.computingCall("computing_claim",appName);
+        String jsonResult = drush.computingCall("computing_claim", appName);
         try {
             Object jsonObj = DUtils.Json.getInstance().fromJson(jsonResult);
             if (jsonObj instanceof Boolean && !((Boolean) jsonObj)) {

@@ -11,7 +11,7 @@ import urllib.parse
 __author__ = 'Daniel Zhou'
 
 
-class DConfig():
+class DConfig(object):
     """
     This class helps read configurations for Drupal python agent.
     """
@@ -21,7 +21,6 @@ class DConfig():
             specified in OS ENV or the current working folder.
         """
 
-        self.logger = get_logger()
         self.properties = {}
 
         if filename is None:
@@ -32,9 +31,9 @@ class DConfig():
         try:
             config_file_properties = read_properties(filename)
             self.properties.update(config_file_properties)
-            self.logger.info('Use configuration in: "%s"' % filename)
+            logging.info('Use configuration in: "%s"' % filename)
         except FileNotFoundError:
-            self.logger.warning('Cannot find config file: "%s". Use defaults.' % filename)
+            logging.warning('Cannot find config file: "%s". Use defaults.' % filename)
 
     def get(self, key, value=None):
         """Try to get config settings from config.properties or system environment variables."""
@@ -72,7 +71,7 @@ def load_default_config(reload=False):
     return _default_config
 
 
-class DDrush():
+class DDrush(object):
     def __init__(self, drush_command, site_alias):
         self.drush_command = drush_command
         self.site_alias = site_alias
@@ -132,7 +131,7 @@ def load_default_drush(reload=False):
     return _default_drush
 
 
-class DRestfulJsonServices():
+class DRestfulJsonServices(object):
 
     def __init__(self, base_url, endpoint, username, password):
         self.base_url = base_url.strip()
@@ -146,7 +145,6 @@ class DRestfulJsonServices():
         self.services_session_token = None
         self.http_user_agent = 'DrupalComputingAgent'
         self.http_content_type = 'application/json'
-        self.logger = get_logger()
 
         # set cookie handler
 
@@ -179,7 +177,7 @@ class DRestfulJsonServices():
                 data = json.dumps(params).encode('utf-8')
 
         # process request
-        self.logger.info('Making connection to: %s' % link)
+        logging.info('Making connection to: %s' % link)
         headers = {'User-Agent': self.http_user_agent}
         if data is not None:
             headers['Content-Type'] = self.http_content_type
@@ -201,7 +199,7 @@ class DRestfulJsonServices():
         :return: True if connection successful, or False.
         """
         result = self.request('system/connect.json', None, 'POST')
-        self.logger.info("Checking connection to '%s/system/connect.json' returns: %s" % (self.services_link, json.dumps(result)))
+        logging.info("Checking connection to '%s/system/connect.json' returns: %s" % (self.services_link, json.dumps(result)))
         return True if 'sessid' in result and len(result['sessid']) > 0 else False
 
     def is_authenticated(self):
@@ -216,14 +214,14 @@ class DRestfulJsonServices():
         result = self.request('user/login.json', params, 'POST')
         if 'token' in result and len(result['token']) > 0:
             self.services_session_token = result['token']
-            self.logger.info('User login successful: %s' % self.username)
+            logging.info('User login successful: %s' % self.username)
         else:
-            self.logger.error('User login failed: %s' % self.username)
+            logging.error('User login failed: %s' % self.username)
 
     def user_logout(self):
         result = self.request('user/logout.json', None, 'POST')
         self.services_session_token = None
-        self.logger.info('User logout successful: %s' % self.username)
+        logging.info('User logout successful: %s' % self.username)
 
 
 _default_services = None
@@ -239,8 +237,7 @@ def load_default_services(reload=False):
         username = config.get('dcomp.services.user.name')
         password = config.get('dcomp.services.user.pass')
         if base_url is None or not base_url.startswith('http') or endpoint is None or username is None or password is None:
-            logger = get_logger()
-            logger.warning('Services configuration problem. Connection to Drupal Services is not guaranteed.')
+            logging.warning('Services configuration problem. Connection to Drupal Services is not guaranteed.')
         # initialize services.
         _default_services = DRestfulJsonServices(base_url, endpoint, username, password)
     return _default_services
@@ -248,10 +245,6 @@ def load_default_services(reload=False):
 
 def check_python_version():
     return sys.version_info[0] >= 3 or (sys.version_info[0] >= 2 and sys.version_info[1] >= 7)
-
-
-def get_logger():
-    return logging.getLogger('dcomp')
 
 
 def read_properties(filename):

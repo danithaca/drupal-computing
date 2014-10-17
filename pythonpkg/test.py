@@ -2,6 +2,7 @@ from pprint import pprint
 import unittest
 import urllib.error
 from dcomp.utils import *
+from dcomp.basic import *
 
 
 class TestUtils(unittest.TestCase):
@@ -62,10 +63,116 @@ class TestUtils(unittest.TestCase):
         services.user_logout()
         self.assertFalse(services.is_authenticated())
 
+    def testRecord(self):
+        record = DRecord(application='computing', command='echo', input={'message': 'hello,world'}, label='python unittest')
+        self.assertEquals('echo', record.get('command'))
+        self.assertEquals(None, record.get('foo'))
+        self.assertEquals('computing', record.application)
+        self.assertTrue(record.is_new())
+
+        d1 = record.to_dict(keeponly=('application'))
+        self.assertTrue('application' in d1)
+        self.assertTrue('command' not in d1)
+
+        d1 = record.to_dict(keepout=('application'))
+        self.assertTrue('application' not in d1)
+        self.assertTrue('command' in d1)
+
+    def testServicesSite(self):
+        site = create_default_services_connection()
+        site.connect()
+
+        # check connection, version, timestamp
+        self.assertTrue(site.check_connection())
+        drupal_version = site.get_drupal_version()
+        self.assertEquals('7', drupal_version[0])
+        ts = site.get_timestamp()
+        self.assertTrue(ts > 0)
+
+        # create record, load
+        record = DRecord(application='computing', command='echo', input={'message': 'hello,world'}, label='python unittest')
+        id1 = site.create_record(record)
+        self.assertTrue(id1 > 0)
+        self.assertTrue(record.is_new())
+        r2 = site.load_record(id1)
+        self.assertFalse(r2.is_new())
+        self.assertEquals('RDY', r2.status)
+
+        # update/save record
+        r2.message = 'hello'
+        site.update_record(r2)
+        r3 = site.load_record(r2.id)
+        self.assertEquals('hello', r2.message)
+        r3.output = {'message': 'bar'}
+        site.update_record_field(r3, 'output')
+        r4 = site.load_record(r3.id)
+        self.assertEquals('bar', r4.output['message'])
+
+        # claim/finish
+        r5 = site.claim_record('computing')
+        self.assertFalse(r5.is_new())
+        self.assertEqual('RUN', r5.status)
+        r5.status = 'SCF'
+        r5.message = 'works'
+        site.finish_record(r5)
+        r6 = site.load_record(r5.id)
+        self.assertEqual('SCF', r6.status)
+        self.assertEqual('works', r6.message)
+
+        # claim not exist
+        r6 = site.claim_record('foobar')
+        self.assertIsNone(r6)
+        site.close()
+
+    def testDrushSite(self):
+        site = create_default_drush_connection()
+
+        # check connection, version, timestamp
+        self.assertTrue(site.check_connection())
+        drupal_version = site.get_drupal_version()
+        self.assertEquals('7', drupal_version[0])
+        ts = site.get_timestamp()
+        self.assertTrue(ts > 0)
+
+        # create record, load
+        record = DRecord(application='computing', command='echo', input={'message': 'hello,world'}, label='python unittest')
+        id1 = site.create_record(record)
+        pprint(id1)
+        self.assertTrue(id1 > 0)
+        self.assertTrue(record.is_new())
+        r2 = site.load_record(id1)
+        self.assertFalse(r2.is_new())
+        self.assertEquals('RDY', r2.status)
+
+        # update/save record
+        r2.message = 'hello'
+        site.update_record(r2)
+        r3 = site.load_record(r2.id)
+        self.assertEquals('hello', r2.message)
+        r3.output = {'message': 'bar'}
+        site.update_record_field(r3, 'output')
+        r4 = site.load_record(r3.id)
+        self.assertEquals('bar', r4.output['message'])
+
+        # claim/finish
+        r5 = site.claim_record('computing')
+        self.assertFalse(r5.is_new())
+        self.assertEqual('RUN', r5.status)
+        r5.status = 'SCF'
+        r5.message = 'works'
+        site.finish_record(r5)
+        r6 = site.load_record(r5.id)
+        self.assertEqual('SCF', r6.status)
+        self.assertEqual('works', r6.message)
+
+        # claim not exist
+        r6 = site.claim_record('foobar')
+        self.assertIsNone(r6)
 
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     # print(check_python_version())
     # print(get_agent_name())
 
@@ -85,15 +192,23 @@ if __name__ == '__main__':
     # pprint(core_status)
     # pprint(drush.get_version())
 
-    services = load_default_services()
+    # services = load_default_services()
     # result = services.request('system/connect.json', None, 'POST')
     # result = services.request('node/1.json', None, 'GET')
     # result = services.check_connection()
-    # result = services.obtain_session_token()
-    services.user_login()
-    result = services.is_authenticated()
-    services.user_logout()
-    result = services.is_authenticated()
-    pprint(result)
+    # # result = services.obtain_session_token()
+    # services.user_login()
+    # result = services.is_authenticated()
+    # services.user_logout()
+    # result = services.is_authenticated()
+    # pprint(result)
     # pprint(urllib.parse.urlencode({'a': 1, 'b': 2}))
+
+    # record = DRecord(application='computing', command='echo', input={'message': 'hello,world'})
+    # pprint(record)
+    # pprint(record.application)
+    # pprint(record.to_json())
+
+    site = create_default_drush_connection()
+    pprint(site.get_timestamp())
 
