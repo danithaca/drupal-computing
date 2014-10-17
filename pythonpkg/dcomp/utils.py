@@ -342,3 +342,23 @@ def read_properties(filename):
 
     # return the dict
     return props
+
+
+def get_class(class_name):
+    """
+    This function gets the class from a string "class_name".
+    See: http://stackoverflow.com/questions/452969/does-python-have-an-equivalent-to-java-class-forname
+    :param class_name: the string of the class name
+    :return: the "class" object so you can instantiate it.
+    """
+    parts = class_name.split('.')
+    if len(parts) > 1:
+        # that is, we need to import the module first.
+        module = ".".join(parts[:-1])
+        m = __import__(module)
+        for comp in parts[1:]:
+            m = getattr(m, comp)
+        return m
+    else:
+        # assuming the class is already in scope
+        return getattr(sys.modules['__main__'], class_name)

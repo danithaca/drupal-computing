@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import json
 import logging
-from dcomp.utils import load_default_drush, load_default_services
+from utils import load_default_drush, load_default_services, get_class
 
 __author__ = 'daniel'
 
@@ -57,7 +57,9 @@ class DSite(metaclass=ABCMeta):
     def create_record(self, record): pass
 
     @abstractmethod
-    def claim_record(self, app_name): pass
+    def claim_record(self, app_name):
+        """Return None if not found."""
+        pass
 
     @abstractmethod
     def update_record(self, record): pass
@@ -203,3 +205,67 @@ class DServicesSite(DSite):
         if record.get('output') is not None:
             params['output'] = record.get('output')
         return self.services.request('computing/%d/finish.json' % record.id, params, 'POST')
+
+
+class DCommand(metaclass=ABCMeta):
+
+    @abstractmethod
+    def prepare(self, params):
+        """Prepare the command."""
+        pass
+
+    @abstractmethod
+    def execute(self):
+        """Run the command, and return status, message, and output."""
+        pass
+
+    def set_context(self, record, site, application, config):
+        self.record = record
+        self.site = site
+        self.application = application
+        self.config = config
+
+
+class DApplication(metaclass=ABCMeta):
+
+    def launch(self):
+        assert self.app_name is not None and self.site is not None and self.config is not None and self.command_mapping is not None
+        self.launch_single_thread()
+
+    def launch_single_thread(self):
+        batch_size = int(self.config.get('dcomp.processing.batch_size', 100))
+        for i in range(batch_size):
+            record = self.site.claim_record(self.app_name)
+            if record is None:
+                logging.info('No more record with READY status for application: %s' % self.app_name)
+                break
+            # this is the main execution
+            # TODO: handle exceptions.
+            self.process_record(record)
+            self.site.finish_record(record)
+        else:
+            logging.info('Finished processing %d records.' % batch_size)
+
+    def process_record(self, record):
+        assert record is not None and not record.is_new() and record.application == self.app_name and record.command is not None
+        logging.info('Preparing to executing command: %s (%d)' % (record.command, record.id))
+
+        try:
+            # instantiate command object
+            command_class = get_class(self.command_mapping.get(record.command, record.command))
+            command_object = command_class()
+            command_object.set_context(record, self.site, self, self.config)
+
+            # execution
+            command_object.prepare(record.input)
+            status, message, output = command_object.execute()
+
+            # take care of result
+            record.status = status
+            record.message = message
+            record.output = output
+        except Exception as e:
+            # handle problems
+            record.status = 'FLD'
+            record.message = e.message
+

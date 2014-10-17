@@ -12,7 +12,7 @@ public class ComputingApplication extends DApplication {
     }
 
     @Override
-    protected Properties registerDefaultCommandMapping() {
+    protected Properties declareCommandMapping() {
         Properties defaultCommandMapping = new Properties();
         defaultCommandMapping.put("Echo", "org.drupal.project.computing.common.EchoCommand");
         defaultCommandMapping.put("echo", "org.drupal.project.computing.common.EchoCommand");

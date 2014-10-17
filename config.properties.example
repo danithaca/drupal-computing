@@ -32,3 +32,6 @@ dcomp.drush.site = @local
 ; optional database properties.
 ; dcomp.database.properties.useCompression = true
 ; dcomp.database.properties.* = xxx
+
+; number of records to process in a single run
+; dcomp.processing.batch_size = 100

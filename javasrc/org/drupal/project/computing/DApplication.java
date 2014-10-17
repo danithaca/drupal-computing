@@ -38,13 +38,18 @@ abstract public class DApplication {
      * Build the default command mapping from code.
      * @return A Properties object with key as DRecord "command" field, and value as DCommand class name.
      */
-    protected abstract Properties registerDefaultCommandMapping();
+    protected abstract Properties declareCommandMapping();
 
 
 
     //////////////////////////////// public methods //////////////////////////////////////
 
 
+    /**
+     * Initialize connection to Drupal site too.
+     *
+     * @param applicationName
+     */
     public DApplication(String applicationName) {
         logger.finest("Create DApplication: " + applicationName);
         this.applicationName = applicationName;
@@ -52,7 +57,7 @@ abstract public class DApplication {
         this.config = DConfig.loadDefault();
         logger.finest("Loaded (or tried to load) configuration file: " + config.getProperty("dcomp.config.file", "config.properties"));
 
-        this.commandMapping = this.registerCommandMapping();
+        this.commandMapping = this.buildCommandMapping();
         logger.finest("Built command mapping, allowed commands: " + StringUtils.join(commandMapping.propertyNames(), ","));
 
         switch (config.getProperty("dcomp.site.access", "drush")) {
@@ -270,11 +275,11 @@ abstract public class DApplication {
      *
      * @return Command mapping with the key as DRecord "command" field, and value as DCommand class name.
      */
-    protected Properties registerCommandMapping() {
+    protected Properties buildCommandMapping() {
         Properties commandMapping = new Properties();
 
         // first, get properties from code.
-        commandMapping.putAll(registerDefaultCommandMapping());
+        commandMapping.putAll(declareCommandMapping());
 
         // second, check mapping from command.properties.
         String commandFileName = config.getProperty("dcomp.command.file", "command.properties");
