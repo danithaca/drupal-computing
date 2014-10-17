@@ -5,9 +5,8 @@ import socket
 import re
 import logging
 import json
-from io import StringIO, TextIOWrapper
-import traceback
-from .exceptions import DSiteException
+import urllib.request
+import urllib.parse
 
 __author__ = 'Daniel Zhou'
 
@@ -81,7 +80,7 @@ class DDrush():
     def execute(self, extra_args=[], input_string=None):
         """
         This does not handle possible exceptions. Caller functions should take care of them.
-        Might throw:CalledProcessError, TimeExpired
+        :except: CalledProcessError, TimeExpired
         """
         config = load_default_config()
         timeout = int(config.get('dcomp.exec.timeout', 120000))
@@ -134,15 +133,117 @@ def load_default_drush(reload=False):
 
 
 class DRestfulJsonServices():
+
     def __init__(self, base_url, endpoint, username, password):
-        self.base_url = base_url
-        self.endpoint = endpoint
-        self.username = username
-        self.password = password
-        self.services_endpoint = "%s/%s" % (base_url, endpoint)
+        self.base_url = base_url.strip()
+        # remove left '/' if any
+        self.endpoint = endpoint.strip().lstrip('/')
+        self.username = username.strip()
+        self.password = password.strip()
+
+        # set other things
+        self.services_link = "%s/%s" % (base_url, endpoint)
+        self.services_session_token = None
+        self.http_user_agent = 'DrupalComputingAgent'
+        self.http_content_type = 'application/json'
+        self.logger = get_logger()
+
+        # set cookie handler
+
+        # first, create an opener than has cookie support.
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+        # then install the opener to request instead of using the default BaseHandler.
+        urllib.request.install_opener(opener)
+
+    def request(self, directive, params, method):
+        """
+        Make request to Drupal services.
+        See https://www.drupal.org/node/783254 for a list of RESTful directives.
+        :param directive: eg system/connect.json, node/1.json, variable_get.json, etc.
+        :param params: data in python {}
+        :param method: GET, POST, PUT, DELETE, etc.
+        :return: the JSON object from Drupal services.
+        :exception: HTTPError
+        """
+
+        data = None
+        link = "%s/%s" % (self.services_link, directive)
+
+        if method == 'GET':
+            if params is not None:
+                query_string = urllib.parse.urlencode(params)
+                link = "%s?%s" % (link, query_string)
+
+        elif method == 'POST' or method == 'PUT':
+            if params is not None:
+                data = json.dumps(params).encode('utf-8')
+
+        # process request
+        self.logger.info('Making connection to: %s' % link)
+        headers = {'User-Agent': self.http_user_agent}
+        if data is not None:
+            headers['Content-Type'] = self.http_content_type
+            # I assume 'Content-Length' is handled in urllib.request.Request
+            # header['Content-Length'] = len(data)
+        if self.services_session_token is not None:
+            headers['X-CSRF-Token'] = self.services_session_token
+
+        request = urllib.request.Request(link, data=data, headers=headers, method=method)
+        # this is the actually connection.
+        response = urllib.request.urlopen(request)
+
+        raw_content = response.read()
+        return json.loads(raw_content.decode('utf-8'))
+
+    def check_connection(self):
+        """
+        Check connection to Drupal Services.
+        :return: True if connection successful, or False.
+        """
+        result = self.request('system/connect.json', None, 'POST')
+        self.logger.info("Checking connection to '%s/system/connect.json' returns: %s" % (self.services_link, json.dumps(result)))
+        return True if 'sessid' in result and len(result['sessid']) > 0 else False
+
+    def is_authenticated(self):
+        return self.services_session_token is not None
+
+    def obtain_session_token(self):
+        link = "%s/services/session/token" % self.base_url
+        return urllib.request.urlopen(link).read().decode('utf-8')
+
+    def user_login(self):
+        params = {'username': self.username, 'password': self.password}
+        result = self.request('user/login.json', params, 'POST')
+        if 'token' in result and len(result['token']) > 0:
+            self.services_session_token = result['token']
+            self.logger.info('User login successful: %s' % self.username)
+        else:
+            self.logger.error('User login failed: %s' % self.username)
+
+    def user_logout(self):
+        result = self.request('user/logout.json', None, 'POST')
+        self.services_session_token = None
+        self.logger.info('User logout successful: %s' % self.username)
 
 
+_default_services = None
 
+
+def load_default_services(reload=False):
+    global _default_services
+    # lazy initialization
+    if _default_services is None or reload:
+        config = load_default_config()
+        base_url = config.get('dcomp.site.base_url')
+        endpoint = config.get('dcomp.services.endpoint')
+        username = config.get('dcomp.services.user.name')
+        password = config.get('dcomp.services.user.pass')
+        if base_url is None or not base_url.startswith('http') or endpoint is None or username is None or password is None:
+            logger = get_logger()
+            logger.warning('Services configuration problem. Connection to Drupal Services is not guaranteed.')
+        # initialize services.
+        _default_services = DRestfulJsonServices(base_url, endpoint, username, password)
+    return _default_services
 
 
 def check_python_version():
