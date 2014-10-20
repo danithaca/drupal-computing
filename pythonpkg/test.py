@@ -169,6 +169,35 @@ class TestUtils(unittest.TestCase):
         r6 = site.claim_record('foobar')
         self.assertIsNone(r6)
 
+    def testApplication(self):
+        site = create_default_drush_connection()
+        with ComputingApplication() as app:
+            # test launch()
+            r1 = DRecord(application='computing', command='echo', label='python unittest', input={'ping': 'test'})
+            r1_id = site.create_record(r1)
+            app.launch()
+
+            r2 = site.load_record(r1_id)
+            self.assertEqual('SCF', r2.status)
+            self.assertEqual('test', r2.output['pong'])
+
+            # test run_once()
+            r3 = DRecord(application='computing', command='echo', label='python unittest', input={'ping': 'test2'})
+            r4 = app.run_once(r3)
+            self.assertEqual('SCF', r4.status)
+            self.assertEqual('test2', r4.output['pong'])
+
+            # test command mapping.
+            r5 = DRecord(application='computing', command='echo2', label='python unittest', input={'ping': 'test failed'})
+            r6 = app.run_once(r5)
+            self.assertEqual('FLD', r6.status)
+            pprint(r6.message)
+
+            r7 = DRecord(application='computing', command='echo2', label='python unittest', input={'ping': 'test success'})
+            app.command_mapping['echo2'] = 'dcomp.EchoCommand'
+            r8 = app.run_once(r7)
+            self.assertEqual('SCF', r8.status)
+            pprint(r8.message)
 
 
 if __name__ == '__main__':
@@ -212,7 +241,8 @@ if __name__ == '__main__':
     # site = create_default_drush_connection()
     # pprint(site.get_timestamp())
 
-    app = ComputingApplication()
-    record = DRecord(application='computing', command='echo', label='python echo', input={'ping': 'foobar'})
-    app.run_once(record)
+    with ComputingApplication() as app:
+        #record = DRecord(application='computing', command='echo', label='python echo', input={'ping': 'foobar'})
+        #app.run_once(record)
+        app.launch()
 

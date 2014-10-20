@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod
 import json
 import logging
+import traceback
+import sys
 from .utils import load_default_drush, load_default_config, load_default_services, get_class, read_properties
 
 __author__ = 'daniel'
@@ -209,6 +211,8 @@ class DServicesSite(DSite):
         return self.services.check_connection()
 
 
+# DCommand doesn't need "with" because everything is handled within "execute()". We don't need extra enter/exit,
+# which would be confusing in terms of what should be done in "execute() and what should be done in "enter/exit".
 class DCommand(object, metaclass=ABCMeta):
 
     def __init__(self):
@@ -223,7 +227,10 @@ class DCommand(object, metaclass=ABCMeta):
 
     @abstractmethod
     def execute(self):
-        """Run the command, and return status, message, and output."""
+        """
+        Run the command. Set result in self.result and optionally set self.status and self.message.
+        Throw DCommandExecutionException with a message if command can't run successfully
+        """
         pass
 
     def set_context(self, record, site, application, config):
@@ -233,7 +240,16 @@ class DCommand(object, metaclass=ABCMeta):
         self.config = config
 
 
+class DCommandExecutionException(Exception):
+    def __init__(self, message):
+        super(DCommandExecutionException, self).__init__()
+        self.message = message
+
+
 class DApplication(object, metaclass=ABCMeta):
+    """
+    This class defines an application. It supports "with".
+    """
 
     def __init__(self, app_name):
         self.app_name = app_name
@@ -257,14 +273,21 @@ class DApplication(object, metaclass=ABCMeta):
         if site_access == 'services':
             logging.info('Access Drupal using Services module.')
             self.site = create_default_services_connection()
-            self.site.connect()
         else:
             logging.info('Access Drupal using Drush.')
             self.site = create_default_drush_connection()
 
+    def __enter__(self):
+        if isinstance(self.site, DServicesSite):
+            self.site.connect()
         # check drupal connection without breaking the program on error
         if not self.site.check_connection():
             logging.warning('Drupal access is not validated.')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if isinstance(self.site, DServicesSite) and self.site.services.is_authenticated():
+            self.site.close()
 
     def launch(self):
         assert self.app_name is not None and self.site is not None and self.config is not None and self.command_mapping is not None
@@ -277,8 +300,8 @@ class DApplication(object, metaclass=ABCMeta):
             if record is None:
                 logging.info('No more record with READY status for application: %s' % self.app_name)
                 break
-            # this is the main execution
-            # TODO: handle exceptions.
+            # this is the main execution. will not handle exceptions, which will cause script to halt.
+            # other exceptions should be hanled in process_record.
             self.process_record(record)
             self.site.finish_record(record)
         else:
@@ -297,6 +320,11 @@ class DApplication(object, metaclass=ABCMeta):
         return self.site.load_record(record.id)
 
     def process_record(self, record):
+        """
+        Process and execute the command from "record". Will try to capture exceptions and set  status as "FLD".
+        :param record: the record to process.
+        :return: None. Resutls are set in "record". Will try to capture exceptions.
+        """
         assert record is not None and not record.is_new() and record.application == self.app_name and record.command is not None
         logging.info('Preparing to executing command: %s (%d)' % (record.command, record.id))
 
@@ -315,10 +343,21 @@ class DApplication(object, metaclass=ABCMeta):
             record.message = c.message if hasattr(c, 'message') and c.message is not None else 'Run command "%s" successful.' % record.command
             record.output = c.result if hasattr(c, 'result') else None
 
-        except Exception as e:
-            # handle problems
+        except DCommandExecutionException as e:
+            # this is expected error
             record.status = 'FLD'
             record.message = e.message
+
+        except AttributeError as e:
+            record.status = 'FLD'
+            record.message = 'Cannot recognize command: %s.' % record.command
+
+        except Exception as e:
+            # handle unexpected problems
+            record.status = 'FLD'
+            record.message = 'Unexpected error: %s. Please check agent log.' % str(e)
+            traceback.print_exc()
+            logging.error('Unexpected error: %s.' % str(e))
 
     @abstractmethod
     def declare_command_mapping(self):
