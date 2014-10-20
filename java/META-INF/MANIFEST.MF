@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Class-Path: lib/bsh-2.0b4.jar lib/commons-cli-1.2.jar lib/commons-code
+ c-1.5.jar lib/commons-collections-3.2.1.jar lib/commons-dbcp-1.4.jar 
+ lib/commons-dbutils-1.5.jar lib/commons-exec-1.1.jar lib/commons-lang
+ 3-3.0.1.jar lib/commons-pool-1.5.6.jar lib/gson-2.2.2.jar lib/mysql-c
+ onnector-java-5.1.10.jar lib/postgresql-9.1-902.jdbc4.jar
+Main-Class: org.drupal.project.computing.v1.common.CommonApplication
+
