@@ -186,6 +186,7 @@ class DRestfulJsonServices(object):
         if self.services_session_token is not None:
             headers['X-CSRF-Token'] = self.services_session_token
 
+        logging.debug('Data: %s. Headers: %s. Method: %s' % (str(data), str(headers), method))
         request = urllib.request.Request(link, data=data, headers=headers, method=method)
         # this is the actually connection.
         response = urllib.request.urlopen(request)

@@ -2,7 +2,7 @@ from pprint import pprint
 import unittest
 import urllib.error
 from dcomp.utils import *
-from dcomp.basic import *
+from dcomp.base import *
 
 
 class TestUtils(unittest.TestCase):
@@ -209,6 +209,10 @@ if __name__ == '__main__':
     # pprint(record.application)
     # pprint(record.to_json())
 
-    site = create_default_drush_connection()
-    pprint(site.get_timestamp())
+    # site = create_default_drush_connection()
+    # pprint(site.get_timestamp())
+
+    app = ComputingApplication()
+    record = DRecord(application='computing', command='echo', label='python echo', input={'ping': 'foobar'})
+    app.run_once(record)
 

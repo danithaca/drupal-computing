@@ -54,6 +54,7 @@ abstract public class DApplication {
         logger.finest("Create DApplication: " + applicationName);
         this.applicationName = applicationName;
 
+        // TODO: should allow users use different DConfig object(?)
         this.config = DConfig.loadDefault();
         logger.finest("Loaded (or tried to load) configuration file: " + config.getProperty("dcomp.config.file", "config.properties"));
 

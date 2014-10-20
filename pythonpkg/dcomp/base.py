@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import json
 import logging
-from utils import load_default_drush, load_default_services, get_class
+from .utils import load_default_drush, load_default_config, load_default_services, get_class, read_properties
 
 __author__ = 'daniel'
 
@@ -23,8 +23,8 @@ class DRecord(object):
     def is_new(self):
         return not hasattr(self, 'id') or self.id is None
 
-    def get(self, field_name):
-        return self.__dict__.get(field_name, None)
+    def get(self, field_name, default_value=None):
+        return self.__dict__.get(field_name, default_value)
 
     def to_json(self):
         return json.dumps(self.__dict__)
@@ -148,7 +148,6 @@ class DServicesSite(DSite):
         else:
             logging.warning('User already logged in. Do nothing.')
 
-
     def close(self):
         if self.services.is_authenticated():
             self.services.user_logout()
@@ -201,13 +200,21 @@ class DServicesSite(DSite):
     def finish_record(self, record):
         assert not record.is_new() and self.services.is_authenticated()
         # 'id' and 'status' are required. 'message' and 'output' are not required so we use record.get().
-        params = {'status': record.status, 'message': record.get('message')}
+        params = {'status': record.status, 'message': record.get('message', 'N/A')}
         if record.get('output') is not None:
             params['output'] = record.get('output')
         return self.services.request('computing/%d/finish.json' % record.id, params, 'POST')
 
+    def check_connection(self):
+        return self.services.check_connection()
 
-class DCommand(metaclass=ABCMeta):
+
+class DCommand(object, metaclass=ABCMeta):
+
+    def __init__(self):
+        self.status = None
+        self.message = None
+        self.result = {}
 
     @abstractmethod
     def prepare(self, params):
@@ -226,7 +233,38 @@ class DCommand(metaclass=ABCMeta):
         self.config = config
 
 
-class DApplication(metaclass=ABCMeta):
+class DApplication(object, metaclass=ABCMeta):
+
+    def __init__(self, app_name):
+        self.app_name = app_name
+        self.config = load_default_config()
+
+        # build command mapping
+        self.command_mapping = {}
+        # 1. load declares in code.
+        self.command_mapping.update(self.declare_command_mapping())
+        # 2. load from command files.
+        try:
+            custom_command_mapping = read_properties(self.config.get("dcomp.command.file", "command.properties"))
+            if len(custom_command_mapping) > 0:
+                self.command_mapping.update(custom_command_mapping)
+        except FileNotFoundError as e:
+            logging.warning('Cannot locate and/or read command mapping file. Use defaults.')
+        logging.info('Command mapping: %s' %(str(self.command_mapping)))
+
+        # create drupal site connection
+        site_access = self.config.get("dcomp.site.access", "drush")
+        if site_access == 'services':
+            logging.info('Access Drupal using Services module.')
+            self.site = create_default_services_connection()
+            self.site.connect()
+        else:
+            logging.info('Access Drupal using Drush.')
+            self.site = create_default_drush_connection()
+
+        # check drupal connection without breaking the program on error
+        if not self.site.check_connection():
+            logging.warning('Drupal access is not validated.')
 
     def launch(self):
         assert self.app_name is not None and self.site is not None and self.config is not None and self.command_mapping is not None
@@ -246,6 +284,18 @@ class DApplication(metaclass=ABCMeta):
         else:
             logging.info('Finished processing %d records.' % batch_size)
 
+    def run_once(self, record):
+        assert record is not None and self.app_name is not None and self.site is not None and self.config is not None and self.command_mapping is not None
+
+        if record.is_new():
+            record.status = 'RUN'
+            record_id = self.site.create_record(record)
+            record = self.site.load_record(record_id)
+
+        self.process_record(record)
+        self.site.finish_record(record)
+        return self.site.load_record(record.id)
+
     def process_record(self, record):
         assert record is not None and not record.is_new() and record.application == self.app_name and record.command is not None
         logging.info('Preparing to executing command: %s (%d)' % (record.command, record.id))
@@ -253,19 +303,48 @@ class DApplication(metaclass=ABCMeta):
         try:
             # instantiate command object
             command_class = get_class(self.command_mapping.get(record.command, record.command))
-            command_object = command_class()
-            command_object.set_context(record, self.site, self, self.config)
+            c = command_class()
+            c.set_context(record, self.site, self, self.config)
 
             # execution
-            command_object.prepare(record.input)
-            status, message, output = command_object.execute()
+            c.prepare(record.input)
+            c.execute()
 
             # take care of result
-            record.status = status
-            record.message = message
-            record.output = output
+            record.status = c.status if hasattr(c, 'status') and c.status is not None and len(c.status) == 3 else 'SCF'
+            record.message = c.message if hasattr(c, 'message') and c.message is not None else 'Run command "%s" successful.' % record.command
+            record.output = c.result if hasattr(c, 'result') else None
+
         except Exception as e:
             # handle problems
             record.status = 'FLD'
             record.message = e.message
+
+    @abstractmethod
+    def declare_command_mapping(self):
+        """Return a {} that has command mapping."""
+        pass
+
+
+class ComputingApplication(DApplication):
+    def __init__(self):
+        super(ComputingApplication, self).__init__('computing')
+
+    def declare_command_mapping(self):
+        return {
+            'Echo': 'dcomp.base.EchoCommand',
+            'echo': 'dcomp.base.EchoCommand'
+        }
+
+
+class EchoCommand(DCommand):
+    def __init__(self):
+        super(EchoCommand, self).__init__()
+        self.ping = None
+
+    def prepare(self, params):
+        self.ping = params.get('ping')
+
+    def execute(self):
+        self.result['pong'] = self.ping
 
