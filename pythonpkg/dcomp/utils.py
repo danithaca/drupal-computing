@@ -21,6 +21,8 @@ class DConfig(object):
             specified in OS ENV or the current working folder.
         """
 
+        from . import __version__
+        logging.info('Drupal Computing agent library version: %s' % __version__)
         self.properties = {}
 
         if filename is None:

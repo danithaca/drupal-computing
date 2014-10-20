@@ -29,6 +29,7 @@ public class DConfig {
     protected Properties properties;
 
     public DConfig() {
+        logger.info("Drupal Computing agent library version: " + DUtils.getInstance().VERSION);
         properties = new Properties();
         // properties = System.getProperties();
         // here we can initialize a few default properties too.
