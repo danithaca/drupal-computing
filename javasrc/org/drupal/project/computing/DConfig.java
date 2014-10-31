@@ -153,6 +153,10 @@ public class DConfig {
 
     /**
      * Try to read "dcomp.database.properties.*" in config.properties.
+     * Requires to have "driver", "database", "username", "password" and "host" to be considered as valid.
+     * See more about db settings in Drupal settings.php.
+     * Extra parameters will be passed to database connection too.
+     *
      * @return The database properties as defined in dcomp.database.properties.*. Or throws DNotFoundException.
      * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-usagenotes-connect-drivermanager.html">Simple MySQL example</a>
      * @see <a href="http://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html">MySQL connection properties</a>

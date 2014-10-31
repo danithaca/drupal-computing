@@ -40,7 +40,10 @@ class DRecord(object):
             return {k: v for k, v in self.__dict__.items()}
 
 
-class DSite(metaclass=ABCMeta):
+# This is Python3 style. avoid using it to support python2.7
+# class DSite(metaclass=ABCMeta):
+class DSite(object):
+    __metaclass__ = ABCMeta
 
     def check_connection(self):
         version = self.get_drupal_version()
@@ -73,8 +76,10 @@ class DSite(metaclass=ABCMeta):
     def finish_record(self, record): pass
     
 
-class DSiteExtended(metaclass=ABCMeta):
-    
+# class DSiteExtended(metaclass=ABCMeta):
+class DSiteExtended(object):
+    __metaclass__ = ABCMeta
+
     @abstractmethod
     def get_variable(self, name, default=None): pass
 
@@ -213,7 +218,8 @@ class DServicesSite(DSite):
 
 # DCommand doesn't need "with" because everything is handled within "execute()". We don't need extra enter/exit,
 # which would be confusing in terms of what should be done in "execute() and what should be done in "enter/exit".
-class DCommand(object, metaclass=ABCMeta):
+class DCommand(object):
+    __metaclass__ = ABCMeta
 
     def __init__(self):
         self.status = None
@@ -246,10 +252,11 @@ class DCommandExecutionException(Exception):
         self.message = message
 
 
-class DApplication(object, metaclass=ABCMeta):
+class DApplication(object):
     """
     This class defines an application. It supports "with".
     """
+    __metaclass__ = ABCMeta
 
     def __init__(self, app_name):
         self.app_name = app_name

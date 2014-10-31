@@ -4,6 +4,25 @@ drupal-computing
 This is the Java/Python agent client code for the Drupal Hybrid Computing module on d.o.
 See [Drupal Computing Module](http://drupal.org/project/computing)
 
+Features
+========
+
+* Access Drupal using Java and Python programs, through Drush or Services.
+* A command queue to facilitate management.
+
+Setup
+=====
+
+You need to setup Java "CLASSPATH" or Python "PYTHONPATH".
+
+Examples:
+
+    export PYTHONPATH=$PYTHONPATH:/home/daniel/Development/d7-computing/computing_java/pythonpkg
+    export CLASSPATH=$CLASSPATH:/home/daniel/Development/d7-computing/computing_java/pythonpkg
+  
+It is beyond the scope of this documentation if you use Pip (for Python) or Maven (for Java) for dependency management. Refer to relevant documentation for details.
+
+
 
 FAQ
 ===
