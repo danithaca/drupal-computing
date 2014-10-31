@@ -13,6 +13,8 @@ Features
 Setup
 =====
 
+You need JavaSE 7+ and Python 2.7+ (currently only supports Python 3.0+, see ...).
+
 You need to setup Java "CLASSPATH" or Python "PYTHONPATH".
 
 Examples:
