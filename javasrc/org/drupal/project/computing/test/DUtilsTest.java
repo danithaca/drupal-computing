@@ -194,6 +194,13 @@ public class DUtilsTest {
 
         DConfig config = DConfig.loadDefault();
         System.out.println(config.getAgentName());
+
+        assertEquals(true, DUtils.getInstance().getBoolean("true"));
+        assertEquals(true, DUtils.getInstance().getBoolean("1"));
+        assertEquals(false, DUtils.getInstance().getBoolean(null));
+        assertEquals(false, DUtils.getInstance().getBoolean(""));
+        assertEquals(false, DUtils.getInstance().getBoolean("0"));
+        assertEquals(false, DUtils.getInstance().getBoolean("false"));
     }
 
 

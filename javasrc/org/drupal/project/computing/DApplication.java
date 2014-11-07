@@ -217,6 +217,10 @@ abstract public class DApplication {
             e.printStackTrace();
             record.setMessage("Cannot identify or instantiate command. " + e.getMessage());
             record.setStatus(DRecord.Status.FLD);
+        } catch (NoClassDefFoundError e) {
+            e.printStackTrace();
+            record.setMessage("Cannot find required class. Check your CLASSPATH settings. " + e.getMessage());
+            record.setStatus(DRecord.Status.FLD);
         }
     }
 
@@ -255,10 +259,10 @@ abstract public class DApplication {
                 site.finishRecord(record);
 
             } catch (DSiteException e) {
+                // most exceptions are handled within "processRecord()".
+                // we are not able to handle DSiteException here. just log a message and exit.
                 e.printStackTrace();
                 logger.severe("Drupal site error: " + e.getMessage());
-                // TODO: try to write error into record.
-
                 break;
             } catch (DNotFoundException e) {
                 // this exception is expected.

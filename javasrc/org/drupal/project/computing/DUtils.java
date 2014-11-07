@@ -5,6 +5,7 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.StringUtils;
@@ -330,6 +331,28 @@ public class DUtils {
             return ((Double) value).longValue();
         } else if (value instanceof Number) {
             return ((Number) value).longValue();
+        } else {
+            throw new IllegalArgumentException("Cannot parse value: " + value.toString());
+        }
+    }
+
+
+    public boolean getBoolean(Object value) {
+        if (value == null) {
+            return false;
+        } else if (value instanceof Boolean) {
+            return (Boolean) value;
+        } else if (value instanceof Integer) {
+            return BooleanUtils.toBoolean((Integer) value);
+        } else if (value instanceof String) {
+            String str = (String) value;
+            if (StringUtils.isBlank(str)) return false;
+            try {
+                int i = Integer.parseInt(str);
+                return BooleanUtils.toBoolean(i);
+            } catch (NumberFormatException e) {
+                return BooleanUtils.toBoolean(str);
+            }
         } else {
             throw new IllegalArgumentException("Cannot parse value: " + value.toString());
         }
