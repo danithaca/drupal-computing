@@ -1,0 +1,10 @@
+# This is an example of the command mapping properties file.
+
+# key: The command to specify in computing record.
+# value: The Java or Python class to actually run the command.
+
+# for java
+; echo_again = org.drupal.project.computing.common.EchoCommand
+
+# for python
+; echo_again = dcomp.EchoCommand

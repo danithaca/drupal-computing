@@ -1,11 +1,6 @@
 package org.drupal.project.computing.test;
 
 import org.apache.commons.lang3.StringUtils;
-import org.drupal.project.computing.exception.DConfigException;
-import org.junit.Test;
-
-import java.io.FileNotFoundException;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

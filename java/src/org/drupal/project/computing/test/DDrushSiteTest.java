@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
-import java.util.List;
 import java.util.logging.Level;
 
 import static junit.framework.Assert.assertEquals;

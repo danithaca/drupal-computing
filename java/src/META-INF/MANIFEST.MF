@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: lib/commons-exec-1.2.jar lib/commons-lang3-3.3.2.jar lib/gson-2.3.jar
+Main-Class: org.drupal.project.computing.common.ComputingApplication
+

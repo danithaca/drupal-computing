@@ -3,7 +3,6 @@ package org.drupal.project.computing;
 import org.apache.commons.lang3.StringUtils;
 import org.drupal.project.computing.exception.DConfigException;
 import org.drupal.project.computing.exception.DNotFoundException;
-import org.drupal.project.computing.exception.DSiteException;
 
 import java.io.*;
 import java.net.InetAddress;

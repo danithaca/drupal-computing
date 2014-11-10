@@ -1,8 +1,7 @@
 drupal-computing
 ================
 
-This is the Java/Python agent client code for the Drupal Hybrid Computing module on d.o.
-See [Drupal Computing Module](http://drupal.org/project/computing)
+This is the Java and Python agent client code for [Drupal Computing module](http://drupal.org/project/computing).
 
 Features
 ========
