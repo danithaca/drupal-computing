@@ -1,13 +1,15 @@
-drupal-computing
-================
+Drupal Computing Clients
+========================
 
 This is the Java and Python agent client code for [Drupal Computing module](http://drupal.org/project/computing).
 
-Features
-========
+Requirements:
 
-* Access Drupal using Java and Python programs, through Drush or Services.
-* A command queue to facilitate management.
+  * Java SE 7+
+  * Python 3+ (vote support for Python 2.7 is planned at ...)
+  
+Current branch release: 7.x-2.0. (Follows Drupal release convention)
+
 
 Setup
 =====
