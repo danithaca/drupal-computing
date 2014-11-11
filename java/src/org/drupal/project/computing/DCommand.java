@@ -9,12 +9,16 @@ import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
 /**
- * Individual command to be executed.
- * Most often developers will write subclass of this class. So the interface has to be very simple and easy to understand.
+ * <p>This is the base class for all Drupal Computing command. A DCommand class is instantiated and executed when a
+ * DApplication process the list of DRecord (computing record entity) from a DSite (Drupal site). A DCommand sub-class
+ * should focus on its own logic, instead of worrying about reading/writing data with Drupal. Input data from Drupal
+ * should be processed in prepare(), and results should be saved in "this.result" and "this.message" field, which are
+ * then saved back to Drupal.
+ * <p/>
  *
- * You need to overrides 2 methods:
- * 1. prepare(): initialize input from a Bindings object.
- * 2. execute(): execute the command.
+ * <p>You need to overrides 2 methods:</p> <ol> <li>prepare(): initialize input from a Bindings object. throws
+ * IllegalArgumentException if needed</li> <li>execute(): execute the command. throws DCommandExecutionException if
+ * necessary. otherwise saves results to "this.result" (Bindings) and "this.message" (StringBuffer)</li> </ol>
  */
 abstract public class DCommand implements Runnable, Callable<Void> {
 
@@ -34,7 +38,7 @@ abstract public class DCommand implements Runnable, Callable<Void> {
 
 
     /**
-     * this is the core of DCommand. Execute the command after fully initialized from Input data.
+     * This is the core of DCommand. Execute the command after fully initialized from Input data.
      * We expect execute() to run successfully. If an error occurs, throw an exception.
      *
      * Execution should also write to "message" and "result" to pass results back to DApplication.
@@ -124,10 +128,10 @@ abstract public class DCommand implements Runnable, Callable<Void> {
     /**
      * Set the contextual data.
      *
-     * @param record
-     * @param site
-     * @param application
-     * @param config
+     * @param record the DRecord object that instantiate this DCommand object
+     * @param site the Drupal site that's associated.
+     * @param application the DApplication object that creates the DCommand object
+     * @param config The configurations.
      */
     public void setContext(DRecord record, DSite site, DApplication application, DConfig config) {
         this.record = record;

@@ -11,28 +11,16 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * <p>This is the application class. It integrates DSite, DConfig, DDatabase and a set of DCommand. Typically,
- * a DApplication has one DSite, one DConfig, zero or one DDatabase. The DApplication is initialized with DConfig,
- * then it creates a DSite (which is not aware of DConfig, because DConfig configs DApplication, where DSite is
- * independent from the Application/Command structure and only deals with Drupal), and from DSite it can retrieve a list
- * of DCommand and then execute them. DCommand can access DApplication in order to get DConfig etc. DSite doesn't have
- * access to either DApplication or DConfig. DSite can generate zero or one DDatabase that links to Drupal db, although
- * DApplication can have multiple DDatabase. </p>
- *
- * TODO: draw UML diagram
- *
- * <b>Additional thoughts:</b>
- *
- * It'll be nice to have "site" and "config" as "final". But that means they have to be set in constructors,
- * and launchFromShell() would have to be static factory method, and then it'll increase complexity.
- *
- * This design combines DApplication and DLauncher. Pro: simple. Con: Can't use other launcher easily.
+ * <p>This is the base class for Computing Applications. A computing application processes a queue of Computing Record
+ * (DRecord) from a Drupal site (DSite) by instantiating and executing a command (DCommand), and saves results back to
+ * Drupal. This class is the entry point to all Drupal Computing Java agent programs. It interacts with DConfig,
+ * DCommand, DRecord, and DSite.</p>
+ * <p>Sub-classes of DApplication will need to overrides declareCommandMapping() to associate a command string in the
+ * Computing Record "command" field to its corresponding DCommand sub-class.</p>
  */
-
 abstract public class DApplication {
 
     //////////////////////////////// abstract methods for overrides //////////////////////
-
 
     /**
      * Build the default command mapping from code.
@@ -41,20 +29,19 @@ abstract public class DApplication {
     protected abstract Properties declareCommandMapping();
 
 
-
     //////////////////////////////// public methods //////////////////////////////////////
 
 
     /**
      * Initialize connection to Drupal site too.
      *
-     * @param applicationName
+     * @param applicationName The name of the application, which maps to Computing Record's "application" field.
      */
     public DApplication(String applicationName) {
         logger.finest("Create DApplication: " + applicationName);
         this.applicationName = applicationName;
 
-        // TODO: should allow users use different DConfig object(?)
+        // no need to use other DConfig file, because users can specify dcomp.file.config.
         this.config = DConfig.loadDefault();
         logger.finest("Loaded (or tried to load) configuration file: " + config.getProperty("dcomp.config.file", "config.properties"));
 
@@ -67,7 +54,6 @@ abstract public class DApplication {
                 try {
                     site = DServicesSite.loadDefault();
                 } catch (DConfigException e) {
-                    e.printStackTrace();
                     logger.severe("Cannot get Services settings.");
                     throw new DRuntimeException(e);
                 }
@@ -87,17 +73,21 @@ abstract public class DApplication {
 
 
     /**
-     * Launch the application, and execute commands.
+     * Launch the application, and execute commands. By default use launchSingleThread(). Subclasses could use other
+     * ways to launch the application, perhaps using multi-thread.
      */
     public void launch() {
         launchSingleThread();
     }
 
+
     /**
-     * Run a command based on the given record.
-     * This is usually used as a programmatic entry to create a record and run it all at once.
+     * Run a command based on the given record. This is usually used as a programmatic entry to create a record and run
+     * it all at once.
+     * TODO: Calling the function should not change the parameter "record", which has side-effect.
      *
-     * @param record Could be a newly created record or an existing record from Drupal. If record is new, create it in Drupal first.
+     * @param record Could be a newly created record or an existing record from Drupal. If record is new, this method
+     *               will create it in Drupal first.
      * @return the record after execution.
      */
     public DRecord runOnce(DRecord record) throws DSiteException {
@@ -108,7 +98,7 @@ abstract public class DApplication {
             record.setStatus(DRecord.Status.RUN); // set record to be in "RUN" status.
             logger.info("Saving new record to Drupal: " + record.toJson());
             long id = site.createRecord(record);
-            //
+            // this is to pass the ID to the calling function.
             record.setId(id);
             record = site.loadRecord(id);
         }
@@ -123,10 +113,10 @@ abstract public class DApplication {
 
 
     /**
-     * Allow register command mapping ad-hoc.
+     * Allow register a command mapping ad-hoc.
      *
-     * @param commandName
-     * @param className
+     * @param commandName the command string in computing record's "command" field.
+     * @param className   the DCommand class to be instantiated and executed.
      */
     public void setCommandMapping(String commandName, String className) {
         this.commandMapping.put(commandName, className);
@@ -143,11 +133,12 @@ abstract public class DApplication {
     }
 
 
+    /**
+     * @return The application name that identifies this application.
+     */
     public String toString() {
         return this.applicationName;
     }
-
-
 
 
     ////////////////////////////// methods available for overrides //////////////////////////////////
@@ -178,9 +169,13 @@ abstract public class DApplication {
 
 
     /**
-     * This is the main execution point.
-     * Input: DRecord. Output: DRecord.
-     * @param record
+     * This is the main execution point for each Computing Record. The parameter "record" will change before and after
+     * execution. This function will try to catch exceptions and set Record execution status as 'FLD'. This does not
+     * catch "DSiteException" because command execution doesn't throws it (unless it access DSite). The caller function
+     * (usually launch() or runOnce() will handle DRecord, which then might get DSiteException. If the DCommand class
+     * does need to access DSite, it might throws DCommandExecutionException that wraps a DSiteException.
+     *
+     * @param record the Computing Record to be processed.
      */
     protected void processRecord(DRecord record) {
         assert record != null && !record.isNew() && record.getApplication().equals(applicationName);
@@ -227,8 +222,8 @@ abstract public class DApplication {
     /**
      * Create a DCommand based on commandName string.
      *
-     * @param commandName
-     * @return
+     * @param commandName the command string
+     * @return the DCommand object that was mapped from the command string.
      */
     protected DCommand createCommand(String commandName) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         assert commandMapping != null;
@@ -246,6 +241,10 @@ abstract public class DApplication {
     }
 
 
+    /**
+     * Run DApplication in a single thread that process the queue of DRecord from DSite in a sequential manner. Process
+     * at most 100 DRecord at a time.
+     */
     protected void launchSingleThread() {
         assert site != null;
 
@@ -275,8 +274,10 @@ abstract public class DApplication {
 
     /**
      * Retrieve the mapping from DRecord "command" name to a DCommand class.
-     * 1. Get all mappings from code.
-     * 2. Get mappings from command.properties, which will override anything defined in #1.
+     * <ol>
+     *     <li>Get all mappings from code.</li>
+     *     <li>Get mappings from command.properties, which will override anything defined in #1.</li>
+     * </ol>
      *
      * @return Command mapping with the key as DRecord "command" field, and value as DCommand class name.
      */
@@ -306,6 +307,5 @@ abstract public class DApplication {
 
         return commandMapping;
     }
-
 
 }

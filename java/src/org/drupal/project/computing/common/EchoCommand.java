@@ -5,6 +5,9 @@ import org.drupal.project.computing.exception.DCommandExecutionException;
 
 import javax.script.Bindings;
 
+/**
+ * A simple DCommand implementation that echos the "input" string into "output".
+ */
 public class EchoCommand extends DCommand {
 
     String pingString;

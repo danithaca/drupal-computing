@@ -1,21 +1,8 @@
 #!/bin/sh
 
-# This shows you how to execute the Java program.
-
-# First, you need to setup required classpath.
-# You need these java libraries: Apache Mahout, Apache Commons-DBCP, Apache Commons-DbUtils, and of course the Drupal Computing module libraries and JDBC Drivers.
-# If you use Ubuntu, you can install a lot of this packages using "apt-get". Then you'll find the libraries in "/usr/share/java".
-
-export MAHOUT_HOME=/opt/mahout-distribution-0.9
-export COMMONS_DBUTILS_HOME=/opt/commons-dbutils-1.6
-export COMMONS_DBCP_HOME=/opt/commons-dbcp-1.4
-export MYSQL_JDBC_HOME=/opt/mysql-connector
+# Setup classpath
 export DRUPAL_COMPUTING_HOME=/opt/drupal-computing
+export CLASSPATH=${CLASSPATH}:.:${DRUPAL_COMPUTING_HOME}/java/computing.jar:${DRUPAL_COMPUTING_HOME}/java/lib/*
 
-export CLASSPATH=${CLASSPATH}:/usr/share/java/*:${COMMONS_DBUTILS_HOME}/*:${COMMONS_DBCP_HOME}/*:${MYSQL_JDBC_HOME}/*:${DRUPAL_COMPUTING_HOME}/java/computing.jar:${DRUPAL_COMPUTING_HOME}/java/lib/*:${MAHOUT_HOME}/*:./recommender.jar
-
-# Next, make sure you setup config.properties so the Java program knows how to access Drupal. See documentation in Drupal Computing Module for details.
-
-# Finally, execute the Recommender Java program.
-
-java -Ddcomp.config.file=config.properties org.drupal.project.recommender.DefaultApplication
+# Execute the default ComputingApplication. Make sure to setup config.properties.
+java -Ddcomp.config.file=config.properties org.drupal.project.computing.common.ComputingApplication

@@ -2,9 +2,9 @@ package org.drupal.project.computing.test;
 
 import org.drupal.project.computing.DDrushSite;
 import org.drupal.project.computing.DRecord;
+import org.drupal.project.computing.DUtils;
 import org.drupal.project.computing.exception.DNotFoundException;
 import org.drupal.project.computing.exception.DSiteException;
-import org.drupal.project.computing.DUtils;
 import org.junit.Before;
 import org.junit.Test;
 

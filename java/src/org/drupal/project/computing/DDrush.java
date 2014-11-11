@@ -11,7 +11,9 @@ import javax.script.SimpleBindings;
 import java.util.logging.Logger;
 
 /**
- * This is the utility class to run drush command.
+ * This is the utility class to run drush command. You need to specify "dcomp.drush.command" (default "drush") and
+ * "dcomp.drush.site" (default "@self") to be able to access Drush. This class interact with Drupal Computing drush
+ * "computing-call" and "computing-eval" to execute any Drupal functions.
  */
 public class DDrush {
 
@@ -24,7 +26,6 @@ public class DDrush {
 
     /**
      * This is the only initialization code. Need to specify drush command and siteAlias.
-     * Default site alias is @self.
      *
      * @param drushCommand drush executable command
      * @param drushSiteAlias drush site alias
@@ -36,7 +37,11 @@ public class DDrush {
         this.drushSiteAlias = drushSiteAlias;
     }
 
-
+    /**
+     * Create a DDrush object using settings from config.properties.
+     *
+     * @return the DDrush object.
+     */
     public static DDrush loadDefault() {
         // might need to check validity.
         DConfig config = DConfig.loadDefault();
@@ -74,8 +79,7 @@ public class DDrush {
             cmdLine.addArguments(command, false);
 
             //System.out.println(cmdLine.toString());
-            String output = DUtils.getInstance().executeShell(cmdLine, input);
-            return output;
+            return DUtils.getInstance().executeShell(cmdLine, input);
 
         } catch (DSystemExecutionException e) {
             throw new DSiteException("Cannot execute drush.", e);
@@ -102,10 +106,6 @@ public class DDrush {
         }
     }
 
-//    @Deprecated
-//    public String getDrushExec() {
-//        return getDrushString();
-//    }
 
     public String getDrushString() {
         return drushCommand + ' ' + drushSiteAlias;
@@ -115,10 +115,9 @@ public class DDrush {
     /**
      * Get Drupal core-status info.
      *
-     * @see "drush core-status"
-     *
      * @return Core status in Map<String, Object>.
      * @throws DSiteException
+     * @see "drush core-status"
      */
     public Bindings getCoreStatus() throws DSiteException {
         Bindings coreStatus = new SimpleBindings();

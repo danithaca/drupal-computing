@@ -7,28 +7,19 @@ import org.drupal.project.computing.exception.DSiteException;
 import java.util.logging.Logger;
 
 /**
- * <p>This is the super class to any Drupal site. A Drupal Hybrid Computing application will use this class and
- * sub-classes to connect to Drupal sites. The suggested way to pass data between applications and Drupal site is
- * through the DRecord objects (maps to a Computing Entity). You would have your Drupal module
- * write input data to a record, and then your application read it and write results back to the output field in the
- * record, and your Drupal module can read data back to the database.</p>
+ * <p>This is the super class to model a Drupal site. A Drupal Computing application will use a DSite class to connect
+ * to Drupal sites. The suggested way to pass data between applications and Drupal site is through the DRecord objects
+ * (maps to a Computing Entity). You would have your Drupal module write input data to a record, and then your
+ * application read it and write results back to the output field in the record, and your Drupal module can read data
+ * back to the database.</p>
  *
- * <p>It doesn't handle deleting of old records, which is handled by Drupal. Here we don't require DSite to offer
- * nodeLoad(), nodeSave(), or userLoad(), etc, because of security concerns. If your application needs to read nodes,
- * the Drupal part of your application will write the node info into the "input" field of computing_record, and then
- * your Java application can read it. However, we don't prevent subclasses to provide a nodeLoad() method. If you use
- * DDrushSite in particular, you can call any Drupal API with drush. Also, you can use DDatabase to access Drupal
- * database directly, but it's not recommended.</p>
+ * <p>Here we don't require DSite to offer nodeLoad(), nodeSave(), or userLoad(), which might be defined in
+ * DSiteExtended. If your application needs to read nodes, the Drupal part of your application will write the node info
+ * into the "input" field of computing_record, and then your Java application can read it. However, we don't prevent
+ * subclasses to provide a nodeLoad() method. If you use DDrushSite in particular, you can call any Drupal API with
+ * drush. Also, you can use DDatabase to access Drupal database directly, but it's not recommended.</p>
  *
- * <p>A Drupal site doesn't need to know the DApplication, or DConfig.</p>
- *
- * <p>Some sub-class implementations:</p>
- * <ul>
- *     <li>DServicesSite: Connect to Drupal services endpoint. Recommended approach.</li>
- *     <li>DDrushSite: Connect to Drupal via Drush. Perhaps create security issues. But more powerful.</li>
- *     <li>DSqlSite (not implemented and not recommended): Connect to Drupal via direct database access (JDBC)</li>
- *     <li>DOrmSite (not implemented and not recommended): Connect to Drupal via direct database access on top of ORM layer (Hibernate/JPA)</li>
- * </ul>
+ * <p>Some sub-class implementations: DServicesSite, DDrushSite</p>
  */
 abstract public class DSite {
 
@@ -37,9 +28,9 @@ abstract public class DSite {
 
     /**
      * Get one available computing record from Drupal to process. Drupal will handle the logic of providing the record.
-     * If there's no record to return, throw
+     * If there's no record to return, throw DNotFoundException.
      *
-     * @param appName
+     * @param appName the Application name to claim a record.
      * @return A computing record to handle, or NULL is none is found.
      */
     abstract public DRecord claimRecord(String appName) throws DSiteException, DNotFoundException;
@@ -48,35 +39,15 @@ abstract public class DSite {
     /**
      * After agent finishes computation, return the results to Drupal.
      *
-     * @param record
+     * @param record the record to mark as finished and send back results.
      * @throws DSiteException
      */
     abstract public void finishRecord(DRecord record) throws DSiteException;
 
-    /**
-     * The first active record for the application. Use this for the "first" running mode.
-     * Sub-classes can use whatever logic to implement this method.
-     *
-     * @param appName
-     * @return One active record for processing or null if no record is found.
-     */
-//    public DRecord getNextRecord(String appName) throws DSiteException {
-//        return queryReadyRecords(appName).get(0);
-//    }
-
-    /**
-     * Active records are those without a "status" code. All handled records has a status code.
-     * Usually, you would process the active records that has "RDY" control code.
-     * Other records might have other control code, and would be processed differently.
-     *
-     * @return All active records that are not handled.
-     * @param appName
-     */
-//    abstract public List<DRecord> queryReadyRecords(String appName) throws DSiteException;
 
     /**
      * Save the updated record in the database.
-     * @param record
+     * @param record The computing record to be saved.
      */
     abstract public void updateRecord(DRecord record) throws DSiteException;
 
@@ -84,8 +55,8 @@ abstract public class DSite {
     /**
      * Update only the specified field of the record.
      *
-     * @param record
-     * @param fieldName
+     * @param record The computing record to be updated.
+     * @param fieldName The field to be updated.
      */
     abstract public void updateRecordField(DRecord record, String fieldName) throws DSiteException;
 
@@ -102,7 +73,7 @@ abstract public class DSite {
      * Load one record according to its ID. This is expected to return a valid DRecord.
      * If id is invalid, this function will throw an exception.
      *
-     * @param id
+     * @param id The id of computing record.
      * @return the loaded DRecord.
      */
     abstract public DRecord loadRecord(long id) throws DSiteException;

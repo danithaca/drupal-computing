@@ -10,8 +10,7 @@ import javax.script.Bindings;
 
 
 /**
- * The Drupal instance that can be accessed locally through drush.
- * Meaning that settings.php is accessible and Drush is executable to execute any drupal script.
+ * The Drupal site instance that can be accessed directly through drush.
  */
 public class DDrushSite extends DSite implements DSiteExtended {
 

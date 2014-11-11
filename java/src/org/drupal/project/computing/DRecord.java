@@ -8,12 +8,10 @@ import javax.script.Bindings;
 import javax.script.SimpleBindings;
 
 /**
- * Maps to a Computing entity in Drupal.
- * Serves as the "boundary object" between Drupal and Agent.
- *
- * Input/Output/etc only encodes in Json string before getting initialized into DRecord object.
- * All DRecord object are ready-to-process with Json encoding etc taken care of.
- *
+ * This class maps to a Computing Record entity in Drupal. It serves as the "boundary object" between Drupal and Agent.
+ * Input/Output/etc only encodes in Json string before getting initialized into DRecord object. All DRecord object are
+ * ready-to-process with Json encoding etc taken care of. See Drupal Computing documentation for more details about the
+ * Computing Record entity.
  */
 public class DRecord {
 
@@ -24,7 +22,6 @@ public class DRecord {
         RDY, // Ready
         SCF, // successful
         FLD, // failed (expected)
-        //DON, // done.
         RUN, // running
         ABD, // Aborted, or Abandoned.
     }
@@ -46,10 +43,18 @@ public class DRecord {
     private Long changed;
 
 
-    public DRecord() {
-        // default constructor.
-    }
+    /**
+     * Default constructor. Does nothing.
+     */
+    public DRecord() {}
 
+    /**
+     * Constructor that takes four important parameters.
+     * @param application the Application name of this record, eg "computing".
+     * @param command the Command name of this record, eg "echo".
+     * @param label the human readable label of the record, eg "Echo Message"
+     * @param input the input to this record.
+     */
     public DRecord(String application, String command, String label, Bindings input) {
         this();
         assert StringUtils.isNotBlank(application) && StringUtils.isNotBlank(command) && StringUtils.isNotBlank(label);
@@ -86,8 +91,8 @@ public class DRecord {
     /**
      * Constructor from Bindings object.
      *
-     * @param jsonObj
-     * @return
+     * @param jsonObj the Bindings object
+     * @return a DRecord object from the Bindings object.
      */
     public static DRecord fromBindings(Bindings jsonObj) throws JsonParseException, JsonSyntaxException, IllegalArgumentException {
         DRecord record = new DRecord();
@@ -143,7 +148,7 @@ public class DRecord {
      * Encode the object into Bindings object.
      * ATTENTION: input/output are still in Bindings. Not encoded in String. They should be encoded as String in toJson().
      *
-     * @return
+     * @return a Bindings object from the record.
      */
     public Bindings toBindings() {
         Bindings jsonObj = new SimpleBindings();
@@ -178,7 +183,7 @@ public class DRecord {
 
     /**
      * If ID is not set yet, that means the record is pragmatically created and not persisted yet.
-     * @return
+     * @return true if the record is created within agent program, instead of loaded from Drupal.
      */
     public boolean isNew() {
         return getId() == null;

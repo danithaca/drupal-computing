@@ -18,29 +18,31 @@ import javax.script.Bindings;
 import javax.script.SimpleBindings;
 import java.io.*;
 import java.math.BigDecimal;
-import java.net.*;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Singleton of the utilities class.
+ * Singleton of utilities class.
  */
 public class DUtils {
 
     ////// Singleton template ////////
+
     private static DUtils ourInstance = new DUtils();
     public static DUtils getInstance() {
         return ourInstance;
     }
     private DUtils() {
-        // According to JDK doc, LogManager should do it right, but here I'll still do it myself.
+        // TODO: According to JDK doc, LogManager should do it right, but here I'll still do it myself.
         logger = Logger.getLogger("org.drupal.project.computing");
         // logger.setUseParentHandlers(false);
     }
 
     ///////////////////  code begins /////////////////
 
+    // TODO: use version defined in MANIFEST?
     public final String VERSION = "7.x-2.0-alpha1";
 
     private Logger logger;
@@ -102,8 +104,8 @@ public class DUtils {
     /**
      * Encode URL query parameters. Basically copied from Apache.HttpClient => URLEncodeUtils.format().
      *
-     * @param params
-     * @return
+     * @param params parameters to encode
+     * @return encoded parameters
      */
     public String encodeURLQueryParameters(Properties params) {
         StringBuilder sb = new StringBuilder();
@@ -125,46 +127,9 @@ public class DUtils {
     }
 
 
-    /**
-     * Execute a command in the working dir, and return the output as a String. If error, log the errors in logger.
-     * This is the un-refined version using Process and ProcessBuilder. See the other version with commons-exec.
-     *
-     * @param command The list of command and parameters.
-     * @param workingDir The working directory. Could be null. The it's default user.dir.
-     * @return command output.
-     */
-    /*@Deprecated
-    public String executeShell(List<String> command, File workingDir) {
-        logger.finest("Running system command: " + StringUtils.join(command, ' '));
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        if (workingDir != null && workingDir.exists() && workingDir.isDirectory()) {
-            processBuilder.directory(workingDir);
-        } else {
-            logger.fine("Using current user directory to run system command.");
-        }
-
-        try {
-            Process process = processBuilder.start();
-            process.waitFor();
-
-            if (process.exitValue() != 0) {
-                logger.severe(readContent(new InputStreamReader(process.getErrorStream())));
-                throw new DRuntimeException("Unexpected error executing system command: " + process.exitValue());
-            } else {
-                // running successfully.
-                return readContent(new InputStreamReader(process.getInputStream()));
-            }
-        } catch (IOException e) {
-            throw new DRuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new DRuntimeException(e);
-        }
-    }*/
-
 
     /**
      * Execute a command in the working dir, and return the output as a String. If error, log the errors in logger.
-     * TODO: check to make sure it won't output confidential information from settings.php, etc.
      *
      * @param commandLine The command line object
      * @param workingDir The working directory. Could be null. The it's default user.dir.
@@ -285,7 +250,8 @@ public class DUtils {
 
 
     /**
-     * Check to make sure Java is > 1.6
+     * Check to make sure Java is > 1.7
+     *
      * @return True if Java version is satisfied.
      */
     public boolean checkJavaVersion() {
@@ -293,21 +259,6 @@ public class DUtils {
         //return version.compareTo("1.6") >= 0;
         return SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_7);
     }
-
-
-    /**
-     * Get either the identifier if presented, or the class name.
-     * @param classObject
-     * @return
-     */
-//    public String getIdentifier(Class<?> classObject) {
-//        Identifier id = classObject.getAnnotation(Identifier.class);
-//        if (id != null) {
-//            return id.value();
-//        } else {
-//            return classObject.getSimpleName();
-//        }
-//    }
 
 
     /**
@@ -337,6 +288,12 @@ public class DUtils {
     }
 
 
+    /**
+     * Get the Boolean value from any object, if possible. Mostly used to bridge with PHP json settings.
+     *
+     * @param value the value, could be '1' or "true", or null.
+     * @return
+     */
     public boolean getBoolean(Object value) {
         if (value == null) {
             return false;
@@ -372,8 +329,9 @@ public class DUtils {
 
     /**
      * Get the string of any object.
-     * @param object
-     * @return
+     *
+     * @param object the object
+     * @return the string
      */
     public String objectToString(Object object) {
         return ReflectionToStringBuilder.toString(object);
@@ -392,137 +350,6 @@ public class DUtils {
         }
         return properties;
     }
-
-//    /**
-//     * Utility class to run PHP snippet
-//     */
-//    public static class Php {
-//
-//        private final String phpExec;
-//
-//        public Php(String phpExec) throws DSystemExecutionException{
-//            assert StringUtils.isNotEmpty(phpExec);
-//            this.phpExec = phpExec;
-//            check();  // check validity of phpExec right away before doing any other things.
-//        }
-//
-//        public Php() throws DSystemExecutionException{
-//            this(new DConfig().getPhpExec());
-//        }
-//
-//        /**
-//         * Evaluates PHP code and return the output in JSON. JSR 223 should be the recommended approach, but there is no
-//         * good PHP engine. PHP-Java bridge is simply a wrapper of php-cgi and doesn't do much, and is not as flexible as
-//         * we call php exec. Quercus works well, but the jar file is too big to include here. In short, we'll simply call
-//         * PHP executable and get results in JSON. see [#1220194]
-//         *
-//         * @param phpCode PHP code snippet.
-//         * @return PHP code execution output.
-//         */
-//        public String evaluate(String phpCode) throws DSystemExecutionException {
-//            CommandLine commandLine = new CommandLine(phpExec);
-//            // we could suppress error. but this is not good because we want it generate errors when fails.
-//            // in command line "-d error_reporting=0", but here it didn't work.
-//            //commandLine.addArgument("-d error_reporting=0");
-//            commandLine.addArgument("--");  // execute input from shell.
-//            return DUtils.getInstance().executeShell(commandLine, null, phpCode);
-//        }
-//
-//        /**
-//         * Serialize a Java object into PHP serialize byte string.
-//         *
-//         * @param value
-//         * @return
-//         * @throws DSystemExecutionException
-//         */
-//        public byte[] serialize(Object value) throws DSystemExecutionException {
-//            String json = DUtils.Json.getInstance().toJson(value);
-//            CommandLine commandLine = new CommandLine(phpExec);
-//            commandLine.addArgument("-E");
-//            // first decode json, and then serialize it. needs to escape
-//            commandLine.addArgument("echo serialize(json_decode($argn));", false);
-//            return DUtils.getInstance().executeShell(commandLine, null, json.getBytes(), Charset.defaultCharset());
-//        }
-//
-//        private String unserializeToJson(byte[] serializedBytes) throws DSystemExecutionException {
-//            CommandLine commandLine = new CommandLine(phpExec);
-//            commandLine.addArgument("-E");
-//            // first unserialize php, and then encode into Json. needs to escape.
-//            commandLine.addArgument("echo json_encode(unserialize($argn));", false);
-//            return new String(DUtils.getInstance().executeShell(commandLine, null, serializedBytes, Charset.defaultCharset()));
-//        }
-//
-//        /**
-//         * Unserialize a PHP serialized byte string into a Java object.
-//         */
-//        public Object unserialize(byte[] serializedBytes) throws DSystemExecutionException {
-//            return DUtils.Json.getInstance().fromJson(unserializeToJson(serializedBytes));
-//        }
-//
-//        /**
-//         * FIXME: toClass can't handle "Type" cases.
-//         */
-//        public <T> T unserialize(byte[] serializedBytes, Class<T> toClass) throws DSystemExecutionException {
-//            return new Gson().fromJson(unserializeToJson(serializedBytes), toClass);
-//        }
-//
-//
-//        public void check() throws DSystemExecutionException {
-//            // test php executable
-//            String testPhp = getInstance().executeShell(phpExec + " -v");
-//            if (!testPhp.startsWith("PHP")) {
-//                throw new DSystemExecutionException("Cannot execute php executable: " + phpExec);
-//            }
-//            getInstance().logger.fine("Evaluate with PHP version: " + new Scanner(testPhp).nextLine());
-//        }
-//
-//
-//        /**
-//         * Extract the php code snippet that defines phpVar from the php file phpFile. For example, to get $databases
-//         * from settings.php: extractPhpVariable(DConfig.locateFile("settings.php", "$databases");
-//         *
-//         * PHP code: see parse.php.
-//         *
-//         * FIXME: if the file has something like "var_dump($databases);", the code would return "$databases);", which is incorrect.
-//         * need to fix it in the next release.
-//         *
-//         * @param phpFile the PHP file to be processed.
-//         * @param phpVar the PHP variable to be extracted. It can only be the canonical form $xxx, not $xxx['xxx'].
-//         * @return the PHP code that defines phpVar.
-//         */
-//        public String extractVariable(File phpFile, String phpVar) throws DSystemExecutionException {
-//            assert phpFile.isFile() && phpVar.matches("\\$\\w+");
-//            final String phpExec = "<?php\n" +
-//                    "function extract_variable($file, $var_name) {\n" +
-//                    "  $content = file_get_contents($file);\n" +
-//                    "  $tokens = token_get_all($content);\n" +
-//                    "  $code = '';\n" +
-//                    "\n" +
-//                    "  $phase = 'skip';\n" +
-//                    "  foreach ($tokens as $token) {\n" +
-//                    "    if (is_array($token) && $token[0] == T_VARIABLE && $token[1] == $var_name) {\n" +
-//                    "      $phase = 'accept';\n" +
-//                    "      $code .= $token[1];\n" +
-//                    "    }\n" +
-//                    "    else if ($phase == 'accept') {\n" +
-//                    "      $code .= is_array($token) ? $token[1] : $token;\n" +
-//                    "      if ($token == ';') {\n" +
-//                    "        $phase = 'skip';\n" +
-//                    "        $code .= \"\\n\";\n" +
-//                    "      }\n" +
-//                    "    }\n" +
-//                    "  }\n" +
-//                    "\n" +
-//                    "  return $code;\n" +
-//                    "}\n";
-//
-//            String code = String.format("%s\necho extract_variable('%s', '%s');",
-//                    phpExec,
-//                    phpFile.getAbsolutePath().replaceAll("'", "\\'"),
-//                    phpVar);
-//            return evaluate(code);
-//        }
-//    }
 
 
     /**
@@ -543,6 +370,7 @@ public class DUtils {
 
         /**
          * Encapsulate json object.
+         *
          * @param obj the object to encode
          * @return the json string
          */

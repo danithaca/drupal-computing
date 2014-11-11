@@ -11,7 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Uses Drupal Services REST Server to access Drupal.
+ * Uses Drupal Services REST Server to access Drupal. This class has connect() and close() which are not defined in
+ * DSite. The DApplication is responsible to connect() and close() the connection. However, here we try "connect()" for
+ * all operations that require user login.
+ *
+ * BUG: DApplication doesn't explicitly run "close()" for DServicesSite.
  */
 public class DServicesSite extends DSite implements DSiteExtended {
 

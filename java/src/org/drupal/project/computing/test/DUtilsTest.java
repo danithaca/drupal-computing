@@ -14,7 +14,6 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
 
 import static junit.framework.Assert.*;
-import static junit.framework.Assert.assertEquals;
 
 public class DUtilsTest {
 

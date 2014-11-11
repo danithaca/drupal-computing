@@ -1,6 +1,9 @@
 package org.drupal.project.computing.test;
 
-import org.drupal.project.computing.*;
+import org.drupal.project.computing.DApplication;
+import org.drupal.project.computing.DRecord;
+import org.drupal.project.computing.DSite;
+import org.drupal.project.computing.DUtils;
 import org.drupal.project.computing.common.ComputingApplication;
 import org.drupal.project.computing.exception.DSiteException;
 import org.junit.Before;

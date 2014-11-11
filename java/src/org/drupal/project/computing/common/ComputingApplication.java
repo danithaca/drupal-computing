@@ -4,7 +4,9 @@ import org.drupal.project.computing.DApplication;
 
 import java.util.Properties;
 
-
+/**
+ * Default "Computing" application.
+ */
 public class ComputingApplication extends DApplication {
 
     public ComputingApplication() {

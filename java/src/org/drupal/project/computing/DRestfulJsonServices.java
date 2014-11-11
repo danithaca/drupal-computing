@@ -7,19 +7,17 @@ import org.drupal.project.computing.exception.DSiteException;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
-import java.io.*;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
 import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * This class helps connect to Drupal using the services.module.
- * Requires Drupal REST Sever module enabled.
- * Both HTTP Request and HTTP Response will use Content-Type = application/json.
- * Make sure to enable REST Server module with json enabled.
- *
- * This is a lightweight class to access Drupal REST Server without using Apache HttpClient.
- * Use only REST Server. Use other servers might lead to unexpected error.
+ * This class allows accessing Drupal using the services.module. It requires Drupal REST Sever module, and both HTTP
+ * Request and HTTP Response will use Content-Type = application/json. See Drupal Computing documentation about how to
+ * configure at the Drupal end.
  */
 public class DRestfulJsonServices {
 
@@ -28,7 +26,7 @@ public class DRestfulJsonServices {
     protected String userName;
     protected String userPass;
     protected String httpUserAgent = "DrupalComputingAgent";
-    protected final String httpContentType = "application/json"; // this can't be edited later.
+    protected String httpContentType = "application/json";
 
     protected URL servicesEndpoint;
     protected String servicesSessionToken;
@@ -58,7 +56,8 @@ public class DRestfulJsonServices {
 
     /**
      * Use the settings in config file and create access to Drupal services.
-     * @return
+     *
+     * @return the DRestfulJsonServices object.
      * @throws DConfigException
      */
     public static DRestfulJsonServices loadDefault() throws DConfigException {
@@ -92,35 +91,38 @@ public class DRestfulJsonServices {
         String jsonResponse = null;
         method = method.toUpperCase();
 
-
-        if (method.equals("POST")) {
-            // construct request url
-            String data = (params == null || params.isEmpty()) ? null : DUtils.Json.getInstance().toJson(params);
-            jsonResponse = httpRequest(servicesEndpoint.toString() + "/" + directive, data, "POST");
-
-        } else if (method.equals("GET")) {
-            StringBuilder requestUrl = new StringBuilder();
-            requestUrl.append(servicesEndpoint.toString()).append("/").append(directive);
-            if (params != null && !params.isEmpty()) {
-                // here we need to construct GET url.
-                Properties urlParams = new Properties();
-                for (String key : params.keySet()) {
-                    Object value = params.get(key);
-                    // make value into Strings to encode in GET URL.
-                    String valueString = (value instanceof String) ? (String) value : DUtils.Json.getInstance().toJson(value);
-                    urlParams.put(key, valueString);
-                }
-                requestUrl.append('?').append(DUtils.getInstance().encodeURLQueryParameters(urlParams));
+        switch (method) {
+            case "POST": {
+                // construct request url
+                String data = (params == null || params.isEmpty()) ? null : DUtils.Json.getInstance().toJson(params);
+                jsonResponse = httpRequest(servicesEndpoint.toString() + "/" + directive, data, "POST");
+                break;
             }
-            jsonResponse = httpRequest(requestUrl.toString(), null, "GET");
-
-        } else if (method.equals("PUT")) {
-            String data = (params == null || params.isEmpty()) ? null : DUtils.Json.getInstance().toJson(params);
-            jsonResponse = httpRequest(servicesEndpoint.toString() + "/" + directive, data, "PUT");
-
-        } else {
-            // not supported.
-            throw new IllegalArgumentException("Request method is not supported: " + method);
+            case "GET": {
+                StringBuilder requestUrl = new StringBuilder();
+                requestUrl.append(servicesEndpoint.toString()).append("/").append(directive);
+                if (params != null && !params.isEmpty()) {
+                    // here we need to construct GET url.
+                    Properties urlParams = new Properties();
+                    for (String key : params.keySet()) {
+                        Object value = params.get(key);
+                        // make value into Strings to encode in GET URL.
+                        String valueString = (value instanceof String) ? (String) value : DUtils.Json.getInstance().toJson(value);
+                        urlParams.put(key, valueString);
+                    }
+                    requestUrl.append('?').append(DUtils.getInstance().encodeURLQueryParameters(urlParams));
+                }
+                jsonResponse = httpRequest(requestUrl.toString(), null, "GET");
+                break;
+            }
+            case "PUT": {
+                String data = (params == null || params.isEmpty()) ? null : DUtils.Json.getInstance().toJson(params);
+                jsonResponse = httpRequest(servicesEndpoint.toString() + "/" + directive, data, "PUT");
+                break;
+            }
+            default:
+                // not supported.
+                throw new IllegalArgumentException("Request method is not supported: " + method);
         }
 
         // parse json
@@ -237,7 +239,10 @@ public class DRestfulJsonServices {
         }
     }
 
-
+    /**
+     * Check connection to Drupal using system/connect.json.
+     * @return true if connection successful, or false if not.
+     */
     public boolean checkConnection() {
         try {
             // we know the result has to be Bindings from system/connect.
@@ -250,6 +255,12 @@ public class DRestfulJsonServices {
     }
 
 
+    /**
+     * Use services.module "services/session/token" to obtain a session token.
+     *
+     * @return The session token.
+     * @throws DSiteException
+     */
     public String obtainServicesSessionToken() throws DSiteException {
         try {
             // this will not use services endpoint. The URL is builtin by services.module.
@@ -263,7 +274,8 @@ public class DRestfulJsonServices {
 
 
     /**
-     * Connect to Drupal services, and
+     * Connect to Drupal services, and login using the specified user credentials. Set session token too to access
+     * Drupal services again.
      */
     public void userLogin() throws DSiteException {
         // seems not necessary to assign a temporary token here.
@@ -287,6 +299,10 @@ public class DRestfulJsonServices {
     }
 
 
+    /**
+     * Logout Drupal user.
+     * @throws DSiteException
+     */
     public void userLogout() throws DSiteException {
         // we don't care about the output.
         request("user/logout.json", null, "POST");
@@ -295,7 +311,11 @@ public class DRestfulJsonServices {
         logger.info("Services successfully logout with user: " + userName);
     }
 
-
+    /**
+     * Whether we have logged in or not, as indicated by whether we have a non-empty session token.
+     *
+     * @return true if we have logged in.
+     */
     public boolean isAuthenticated() {
         return StringUtils.isNotBlank(servicesSessionToken);
     }
