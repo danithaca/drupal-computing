@@ -24,7 +24,7 @@ public class DRecord {
         RDY, // Ready
         SCF, // successful
         FLD, // failed (expected)
-        DON, // done.
+        //DON, // done.
         RUN, // running
         ABD, // Aborted, or Abandoned.
     }
