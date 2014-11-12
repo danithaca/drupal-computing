@@ -61,11 +61,13 @@ Services (see Drupal Computing documentation for details):
   * __dcomp.services.user.name__ (required): Drupal user's name to access Drupal
   * __dcomp.services.user.pass__ (required): Drupal user's password
 
-Other settings:
+Other settings (all optional):
 
   * __dcomp.database.url__: JDBC database url.
   * __dcomp.database.properties.*__: other database settings, e.g., dcomp.database.properties.username, dcomp.database.properties.password, etc. This will be used to establish database connections.
   * __dcomp.agent.name__: Specifies the agent name to distinguish between different agent programs. Default is the hostname.
+  * __dcomp.exec.timeout__: Specifies how long to execute command line. Used for Drush. Default is 120000, or 2 minutes.
+  * __dcomp.processing.batch_size__: Specifies how many computing record to process in one single run. Default is 100.
 
 
 

@@ -1,14 +1,19 @@
+""" Defines the framework to use with Drupal Computing. """
+
 from abc import ABCMeta, abstractmethod
 import json
 import logging
 import traceback
-import sys
+
 from .utils import load_default_drush, load_default_config, load_default_services, get_class, read_properties
 
-__author__ = 'daniel'
+
+__author__ = 'Daniel Zhou'
 
 
 class DRecord(object):
+    """ Models the Computing Record entity. """
+
     def __init__(self, **entries):
         """
         Code copied from:
@@ -43,6 +48,8 @@ class DRecord(object):
 # This is Python3 style. avoid using it to support python2.7
 # class DSite(metaclass=ABCMeta):
 class DSite(object):
+    """ Models the base class for all Drupal site. """
+
     __metaclass__ = ABCMeta
 
     def check_connection(self):
@@ -50,16 +57,20 @@ class DSite(object):
         return len(version) > 0 and version[0] in ('6', '7', '8')
 
     @abstractmethod
-    def get_drupal_version(self): pass
+    def get_drupal_version(self):
+        pass
 
     @abstractmethod
-    def get_timestamp(self): pass
+    def get_timestamp(self):
+        pass
 
     @abstractmethod
-    def load_record(self, record_id): pass
+    def load_record(self, record_id):
+        pass
     
     @abstractmethod
-    def create_record(self, record): pass
+    def create_record(self, record):
+        pass
 
     @abstractmethod
     def claim_record(self, app_name):
@@ -67,13 +78,16 @@ class DSite(object):
         pass
 
     @abstractmethod
-    def update_record(self, record): pass
+    def update_record(self, record):
+        pass
 
     @abstractmethod
-    def update_record_field(self, record, field_name): pass
+    def update_record_field(self, record, field_name):
+        pass
 
     @abstractmethod
-    def finish_record(self, record): pass
+    def finish_record(self, record):
+        pass
     
 
 # class DSiteExtended(metaclass=ABCMeta):
@@ -88,11 +102,14 @@ class DSiteExtended(object):
 
 
 def create_default_drush_connection():
+    """ Returns an DDrushSite() object using drush settings in config.properties. """
     drush = load_default_drush()
     return DDrushSite(drush)
 
 
 class DDrushSite(DSite):
+    """ The Drupal site connection using Drush. """
+
     def __init__(self, drush):
         self.drush = drush
 
@@ -141,11 +158,13 @@ class DDrushSite(DSite):
 
 
 def create_default_services_connection():
+    """ Returns an DServicesSite() object using drush settings in config.properties. """
     services = load_default_services()
     return DServicesSite(services)
 
 
 class DServicesSite(DSite):
+    """ The Drupal site connection using Services. """
     def __init__(self, services):
         self.services = services
 
@@ -219,6 +238,8 @@ class DServicesSite(DSite):
 # DCommand doesn't need "with" because everything is handled within "execute()". We don't need extra enter/exit,
 # which would be confusing in terms of what should be done in "execute() and what should be done in "enter/exit".
 class DCommand(object):
+    """ The base class for all Drupal Computing command that focuses on executing program logic. """
+
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -253,9 +274,8 @@ class DCommandExecutionException(Exception):
 
 
 class DApplication(object):
-    """
-    This class defines an application. It supports "with".
-    """
+    """ This class defines a Drupal Computing application. Use with "with". """
+
     __metaclass__ = ABCMeta
 
     def __init__(self, app_name):
@@ -373,6 +393,8 @@ class DApplication(object):
 
 
 class ComputingApplication(DApplication):
+    """ The default "computing" application. """
+
     def __init__(self):
         super(ComputingApplication, self).__init__('computing')
 
@@ -384,6 +406,8 @@ class ComputingApplication(DApplication):
 
 
 class EchoCommand(DCommand):
+    """ One DCommand sub-class to illustrate how to use. """
+
     def __init__(self):
         super(EchoCommand, self).__init__()
         self.ping = None

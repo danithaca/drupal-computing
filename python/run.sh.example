@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Setup classpath
+export DRUPAL_COMPUTING_HOME=/opt/drupal-computing
+export PYTHONPATH=${PYTHONPATH}:${DRUPAL_COMPUTING_HOME}/python
+
+# Execute the default ComputingApplication. Make sure to setup config.properties.
+python3 -m dcomp

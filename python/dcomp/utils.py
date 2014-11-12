@@ -1,3 +1,5 @@
+""" Utilities to use with Drupal. """
+
 import os
 import subprocess
 import sys
@@ -12,13 +14,12 @@ __author__ = 'Daniel Zhou'
 
 
 class DConfig(object):
-    """
-    This class helps read configurations for Drupal python agent.
-    """
+    """ This class helps read configurations for Drupal python agent. """
 
     def __init__(self, filename=None):
-        """ Load settings from "filename" if given, or load settings from config.properties
-            specified in OS ENV or the current working folder.
+        """
+        Load settings from "filename" if given, or load settings from config.properties
+        specified in OS ENV or the current working folder.
         """
 
         from . import __version__
@@ -66,6 +67,7 @@ _default_config = None
 
 
 def load_default_config(reload=False):
+    """ Load configurations from config.properties. """
     global _default_config
     # lazy initialization
     if _default_config is None or reload:
@@ -74,6 +76,8 @@ def load_default_config(reload=False):
 
 
 class DDrush(object):
+    """ Helper class to access Drush. """
+
     def __init__(self, drush_command, site_alias):
         self.drush_command = drush_command
         self.site_alias = site_alias
@@ -125,6 +129,7 @@ _default_drush = None
 
 
 def load_default_drush(reload=False):
+    """ Load DDrush() object using the settings in config.properties. """
     global _default_drush
     # lazy initialization
     if _default_drush is None or reload:
@@ -134,6 +139,7 @@ def load_default_drush(reload=False):
 
 
 class DRestfulJsonServices(object):
+    """ Helper class to access Drpual Services module endpoints. """
 
     def __init__(self, base_url, endpoint, username, password):
         self.base_url = base_url.strip()
@@ -156,8 +162,7 @@ class DRestfulJsonServices(object):
         urllib.request.install_opener(opener)
 
     def request(self, directive, params, method):
-        """
-        Make request to Drupal services.
+        """ Make request to Drupal services.
         See https://www.drupal.org/node/783254 for a list of RESTful directives.
         :param directive: eg system/connect.json, node/1.json, variable_get.json, etc.
         :param params: data in python {}
@@ -231,6 +236,7 @@ _default_services = None
 
 
 def load_default_services(reload=False):
+    """ Load DRestfulJsonServices() object using the settings in config.properties. """
     global _default_services
     # lazy initialization
     if _default_services is None or reload:
