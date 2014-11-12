@@ -73,7 +73,8 @@ Other settings (all optional):
 
 Code Examples
 -------------
-    
+
+These examples are for Python. Java code should be similar.
 
 Connect to Drupal Using Drush, and get node info:
 
