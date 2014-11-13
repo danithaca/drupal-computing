@@ -1,21 +1,21 @@
-Drupal Computing Client
-=======================
+Drupal Computing: Client Library
+================================
 
-This is the Java and Python client library for [Drupal Computing module](http://drupal.org/project/computing). To use the same terminology, I'll call the client as "Agent".
+This is the Java and Python client library for the [Drupal Computing module](http://drupal.org/project/computing) to help you write non-PHP programs, or _agent programs_, that interact with Drupal in a distributed computing environment.
+
+Current release (following the Drupal convention): _7.x-2.0-alpha1_ in _7.x-2.x_ branch.
 
 Requirements:
 
   * For the Java client: Java SE 7+, Apache Commons Lang3 (included), Apache Commons Exec (included), Google Gson (included).
   * For the Python client: Python 3+
-  
-Current release (following the Drupal convention): 7.x-2.0-alpha1 (tag), in branch 7.x-2.0
 
 
 Technical Features
 ------------------
 
-  * Reusable Java/Python client code to access Drupal using Services (REST Server) and Drush.
-  * Reusable code to read & write data to and from Drupal.
+  * Simple and reusable Java/Python utility code to interact with Drupal using Services (REST Server) and Drush.
+  * A framework to read, write and process data to/from Drupal.
   * Multi-thread support (to be implemented).
   * MapReduce/Hadoop support (to be implemented).
   * Database connection pooling support for Java (to be implemented).
@@ -24,49 +24,41 @@ Technical Features
 Install and Config
 ------------------
 
-It is recommended to download this code to a different server than the Drupal production server.
+First, install the [Drupal Computing module](http://drupal.org/project/computing) on your Drupal site. Next, download the Client Library code to the server where you would run the agent programs (usually on a different server than the Drupal server). On that server, setup "CLASSPATH" (for Java) and/or "PYTHONPATH" (for Python) for your agent programs to access the code library, e.g.:
 
-You need to setup Java "CLASSPATH" or Python "PYTHONPATH".
-
-Examples:
-
-    export PYTHONPATH=$PYTHONPATH:/home/daniel/Development/d7-computing/computing_java/pythonpkg
-    export CLASSPATH=$CLASSPATH:/home/daniel/Development/d7-computing/computing_java/pythonpkg
+    export DRUPAL_COMPUTING_HOME=/opt/drupal-computing
+    export PYTHONPATH=PYTHONPATH=${PYTHONPATH}:${DRUPAL_COMPUTING_HOME}/python
+    export CLASSPATH=${CLASSPATH}:${DRUPAL_COMPUTING_HOME}/java/computing.jar:${DRUPAL_COMPUTING_HOME}/java/lib/*
   
-It is beyond the scope of this documentation if you use Pip (for Python) or Maven (for Java) for dependency management. Refer to relevant documentation for details.
+_(Note: It is beyond the scope of this documentation if you do dependency management using Maven (for Java) or pip/virtualenv (for Python). Refer to their documentations for details.)_
 
-The most important config file is config.properties, which specifies how the Agent program accesses Drupal. Usually you can save the file under the working directory, or define system variable: DCOMP_CONFIG_FILE. For the Java client, you can also specify the location using -Dcomp.config.file=...
-
-To turn on debugging: Java ..., Python ...
-
+Finally, create and configure _config.properties_ file to access Drupal. Specify the file's location in system environment variable `DCOMP_CONFIG_FILE`, or save the file to the current working directory. If you prefer not to use this file, you can use environment variables instead (e.g., `dcomp.site.access` would be env var `DCOMP_SITE_ACCESS`).
 
 ### config.properties ###
 
-Anything defined in this file can also be accessed with a system environment variable (replacing '.' with '_' and to upper case). For example, dcomp.command.file would be DCOMP_COMMAND_FILE.
+Required settings:
 
-Global settings:
+  * __dcomp.site.access__: Specifies whether to access Drupal using either "drush" (default) or "services".
+  * __dcomp.command.file__: Specifies the location of "command.properties" file, which maps addition "command" string into a Python/Java command class. 
 
-  * __dcomp.command.file__: specifies the location of "command.properties" file.
-  * __dcomp.site.access__: Specifies how to access Drupal using either "drush" (default) or "services".
+Drush settings (required if using Drush):
 
-Drush:
-
+  * __dcomp.drush.site__: Specifies the default drush site alias. Default is "@self" (including '@'). See Drush documentation "site alias" for more details.
   * __dcomp.drush.command__: Specifies the "drush" system command (e.g., "/usr/bin/drush"). Default is "drush".
-  * __dcomp.drush.site__: Specifies the default drush site alias to use. Default is "@self". You need to use '@'. See Drush documentation "site alias" for more details.
 
-Services (see Drupal Computing documentation for details): 
+Services settings (see Drupal Computing documentation and Services module documentation for details): 
 
-  * __dcomp.site.base_url__ (required): Drupal site url, eg http://exmaple.com
-  * __dcomp.services.endpoint__ (required): Services endpoint defined in Drupal
-  * __dcomp.services.user.name__ (required): Drupal user's name to access Drupal
+  * __dcomp.site.base_url__ (required): Drupal site url, e.g. http://exmaple.com
+  * __dcomp.services.endpoint__ (required): Services endpoint, defined in Drupal
+  * __dcomp.services.user.name__ (required): Drupal user's name
   * __dcomp.services.user.pass__ (required): Drupal user's password
 
-Other settings (all optional):
+Optional settings:
 
-  * __dcomp.database.url__: JDBC database url.
-  * __dcomp.database.properties.*__: other database settings, e.g., dcomp.database.properties.username, dcomp.database.properties.password, etc. This will be used to establish database connections.
-  * __dcomp.agent.name__: Specifies the agent name to distinguish between different agent programs. Default is the hostname.
-  * __dcomp.exec.timeout__: Specifies how long to execute command line. Used for Drush. Default is 120000, or 2 minutes.
+  * __dcomp.database.url__: JDBC database connection url, which overrides all settings below, if any.
+  * __dcomp.database.properties.*__: Other database settings, e.g., dcomp.database.properties.username, dcomp.database.properties.password, etc, if you prefer this than dcomp.database.url.
+  * __dcomp.agent.name__: The name of the agent program to distinguish in Drupal site. Default is the agent server's hostname.
+  * __dcomp.exec.timeout__: Maximum milliseconds to execute command line programs (e.g., the drush executable). Default is 120000, or 2 minutes.
   * __dcomp.processing.batch_size__: Specifies how many computing record to process in one single run. Default is 100.
 
 
@@ -74,36 +66,58 @@ Other settings (all optional):
 Code Examples
 -------------
 
-These examples are for Python. Java code should be similar.
+Most of these examples are for Python. The Java code would be similar.
 
-Connect to Drupal Using Drush, and get node info:
+Use one-shot script to access Drupal using Drush and Services, and print node/user info:
 
-    # requires python3, set drush alias in config.properties
+    # code copied from python/dcomp_example.py
+    
+    # turn on debugging
+    logging.basicConfig(level=logging.DEBUG)
+
+    # requires 'drush alias' in config.properties.
     drush = dcomp.load_default_drush()
-    
+
     # execute any Drupal/PHP functions and get results in JSON.
-    node = drush.computing_eval("return node_load(1);")
-    print(node['title'])
+    n1 = drush.computing_eval("$nid = 1; return node_load($nid);")
+    print('Node name (using Drush): %s' % n1['title'])
+
+    # 'computing_call' is to execute any one drupal function.
+    u1 = drush.computing_call('user_load', 1)
+    print('User name (using Drush): %s' % u1['name'])
+
+    # use services module. access info defined in config.properties.
+    # requires proper Drupal permissions and Services resources to be able to run successfully.
+    # see the Drupal Computing documentation for more details.
+    services = dcomp.load_default_services()
+    services.check_connection()
+    services.user_login()
+
+    # see the list of things you can do at: https://www.drupal.org/node/783254
+    n2 = services.request('node/1.json', None, 'GET')
+    print('Node name (using Services): %s' % n2['title'])
+
+    # get drupal variable
+    v1 = services.request('system/get_variable.json', {'name': 'install_profile', 'default': 'n/a'}, 'POST')
+    print('"install_profile" drupal variable: %s' % v1)
+
+Use the "computing record" framework to run agent programs in a systematic way:
+
+    # code copied from Drupal's "machine_learning" module.
+    # make sure to register command in 'command.properties' file: check_python = CheckPython
     
-    user = drush.computing_call('user_load', 1)
-    print(user['name'])
-
-
-Use the "queue" mechanism and execute command through the use of Computing Record:
-
-    # register command in command.properties:
-    # check_python = CheckPython
-    
-    # then create a new python file example.py:
+    # then create a new python file check.py:
     
     class CheckPython(DCommand):
-    
         # overrides execute() to run a command. 
         def execute(self):
-            # save results in self.result, which will be saved to Computing Record "output" field.
+            # save data in self.result to be saved automatically to Computing Record "output" field
+            # which you can later access in Drupal. 
             self.result['python'] = {'title': 'Python', 'version': sys.version, 'installed': True}
     
-        # overrides prepare() to handle the parameters from Computing Record "input" field.
+        # overrides prepare() to handle the parameters from Computing Record "input" field
+        # which is an easy way to feed data from Drupal into agent programs using either Drush or Services.
+        # this particular example doesn't take advantage of this.
         def prepare(self, params): pass
         
     # run application
@@ -115,45 +129,36 @@ Use the "queue" mechanism and execute command through the use of Computing Recor
         
         # use run_once() to execute the command and save result back to Drupal via the use of Computing Record.
         with ComputingApplication() as app:
+        
+          # after 'run_once', you'll see a new Computing Record entity created in Drupal.
           app.run_once(record)
-
-
-Directly query Drupal database:
-
-    DConfig config = new DConfig();
-    // if you don't set this, the library will automatically tries to find settings.php
-    config.setProperties("drupal.settings.file", "/drupal/sites/default/settings.php");
-    // this will read db connection info from settings.php or other places
-    Properties dbProperties = config.getDbProperties();
-    
-    // create direct database connection with JDBC and DBCP.
-    DDatabase db = new DDatabase(dbProperties);
-    
-    // note here you can use {node} to take care of db_prefix, and type=? to take care of escaping.
-    long count = (Long) db.queryValue("SELECT COUNT(*) FROM {node} WHERE type=?", "forum");
-    System.out.println(count);
+          
+          # instead of using "run_once" with a new computing record, you can process computing records already created in Drupal
+          # you would normally use this approach is Drupal initiates a computing request with data saved in "input".
+          # app.launch()
 
 
 FAQ
 ---
 
-#### Q: What are the differences between the Java implementation and the Python implementation? ####
+#### Q: Any difference between the Java client and the Python client? ####
 
-The basic structure is the same, but details are different. See corresponding documentations.
-There are some differences between the Java client APIs and Python client APIs due to their different naming conventions. However, the structure is the same. 
+The Java client and Python client use different naming conventions. But the code structures are very similar.
 
-#### Q: Is this project going to support languages other than Java and Python? ####
+Java is a "strong type" language and does not have native support for a flexible "JSON Object" data type. The Java client uses `javax.script.Bindings` for data in "JSON Object", and you would see many lines of code just to do data type conversion, which are not present in the Python client.
 
-No for now. In the meantime, you can use:
-you can also use Jython 2.7 and the Java client library. Also you can use Groovy, Scala, JRuby, Jython etc with the Java client library.
+#### Q: Can I use languages other than Java and Python? ####
+
+You can use the Java client to work with JRuby, Groovy, Scala, etc. You can also use Jython 2.x with the Java client for Python 2.x. Native support for other languages are not planned.
 
 #### Q: Will this be distributed in Maven and PyPi?
 
 Possibly. Please follow [issue #4](https://github.com/danithaca/drupal-computing/issues/4).
 
-#### Q: Where can I find more info? ####
+#### Q: Where to find more info? ####
 
-  * Read the Source Code.
-  * For the Java client, you can acess javadoc at java/doc.
-  * For the Python client, you can use dir() and help() to get more info.
-  * Go to the project page on drupal.org (http://drupal.org/project/computing) to find more info about the module.
+  * Read the source code.
+  * Read javadoc at java/doc (for the Java client).
+  * Use `dir()` and `help()` to get docstring help info (for the Python client)
+  * Learn more about the [Drupal Computing module](http://drupal.org/project/computing) on drupal.org.
+  
