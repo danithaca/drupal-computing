@@ -149,7 +149,7 @@ Java is a "strong type" language and does not have native support for a flexible
 
 #### Q: Can I use languages other than Java and Python? ####
 
-You can use the Java client to work with JRuby, Groovy, Scala, etc. You can also use Jython 2.x with the Java client for Python 2.x. Native support for other languages are not planned.
+You can use the Java client to work with JRuby, Groovy, Scala, etc. You can also use Jython 2.x with the Java client for Python 2.x. To use R, you can try rpy2 (for Python/R) or JRI (for Java/R). Native support for other languages are not planned.
 
 #### Q: Will this be distributed in Maven and PyPi?
 
