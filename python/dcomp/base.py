@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 import json
 import logging
 import traceback
+from six import add_metaclass
 
 from .utils import load_default_drush, load_default_config, load_default_services, get_class, read_properties
 
@@ -45,12 +46,11 @@ class DRecord(object):
             return {k: v for k, v in self.__dict__.items()}
 
 
-# This is Python3 style. avoid using it to support python2.7
-# class DSite(metaclass=ABCMeta):
+# Python3 style: class DSite(metaclass=ABCMeta). Python2 style __metaclass__ = ABCMeta
+# this is "six" style, using decoration.
+@add_metaclass(ABCMeta)
 class DSite(object):
     """ Models the base class for all Drupal site. """
-
-    __metaclass__ = ABCMeta
 
     def check_connection(self):
         version = self.get_drupal_version()
@@ -88,11 +88,10 @@ class DSite(object):
     @abstractmethod
     def finish_record(self, record):
         pass
-    
 
-# class DSiteExtended(metaclass=ABCMeta):
+
+@add_metaclass(ABCMeta)
 class DSiteExtended(object):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def get_variable(self, name, default=None): pass
@@ -237,10 +236,9 @@ class DServicesSite(DSite):
 
 # DCommand doesn't need "with" because everything is handled within "execute()". We don't need extra enter/exit,
 # which would be confusing in terms of what should be done in "execute() and what should be done in "enter/exit".
+@add_metaclass(ABCMeta)
 class DCommand(object):
     """ The base class for all Drupal Computing command that focuses on executing program logic. """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self):
         self.status = None
@@ -273,10 +271,9 @@ class DCommandExecutionException(Exception):
         self.message = message
 
 
+@add_metaclass(ABCMeta)
 class DApplication(object):
     """ This class defines a Drupal Computing application. Use with "with". """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, app_name):
         self.app_name = app_name

@@ -1,6 +1,6 @@
 from pprint import pprint
 import unittest
-import urllib.error
+import six.moves.urllib.error as urllib_error
 
 from dcomp.utils import *
 from dcomp.base import *
@@ -22,7 +22,7 @@ class TestUtils(unittest.TestCase):
         drush = load_default_drush()
         config = load_default_config()
 
-        self.assertEquals(config.get_drush_command() + config.get_drush_site_alias(), drush.get_drush_string())
+        self.assertEquals("%s %s" % (config.get_drush_command(), config.get_drush_site_alias()), drush.get_drush_string())
 
         core_status = drush.get_core_status()
         self.assertEquals('7', core_status['drupal-version'][0])
@@ -47,7 +47,7 @@ class TestUtils(unittest.TestCase):
         try:
             pprint(services.request('system/get_variable.json', {'name': 'install_profile'}, 'POST'))
             self.assertTrue(False)
-        except urllib.error.HTTPError as e:
+        except urllib_error.HTTPError as e:
             self.assertEquals(403, e.code)
 
         # test login
@@ -242,8 +242,9 @@ if __name__ == '__main__':
     # site = create_default_drush_connection()
     # pprint(site.get_timestamp())
 
-    with ComputingApplication() as app:
-        #record = DRecord(application='computing', command='echo', label='python echo', input={'ping': 'foobar'})
-        #app.run_once(record)
-        app.launch()
+    # with ComputingApplication() as app:
+    #     #record = DRecord(application='computing', command='echo', label='python echo', input={'ping': 'foobar'})
+    #     #app.run_once(record)
+    #     app.launch()
 
+    unittest.main()

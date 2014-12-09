@@ -7,8 +7,9 @@ import socket
 import re
 import logging
 import json
-import urllib.request
-import urllib.parse
+import six
+import six.moves.urllib.request as urllib_request
+import six.moves.urllib.parse as urllib_parse
 
 __author__ = 'Daniel Zhou'
 
@@ -95,7 +96,45 @@ class DDrush(object):
             all_args.extend(extra_args)
 
         # TODO: handle error output and exceptions.
-        return subprocess.check_output(all_args, input=input_string, universal_newlines=True, timeout=timeout)
+        if six.PY3 and sys.version_info[1] >= 4:
+            return subprocess.check_output(all_args, input=input_string, universal_newlines=True, timeout=timeout)
+
+        elif six.PY3:
+            # six.PY3 == True and sys.version_info[1] < 4
+            # copied and modified from python3.4, subprocess.py source code
+            with subprocess.Popen(all_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True) as process:
+                try:
+                    if sys.version_info[1] >= 3:
+                        # python3.3 supports timeout.
+                        output, unused_err = process.communicate(input=input_string, timeout=timeout)
+                    else:
+                        output, unused_err = process.communicate(input=input_string)
+                except:
+                    process.kill()
+                    process.wait()
+                    raise
+                retcode = process.poll()
+                if retcode:
+                    raise subprocess.CalledProcessError(retcode, process.args, output=output)
+            return output
+
+        elif six.PY2:
+            # python2 Popen doesn't support "with"
+            process = subprocess.Popen(all_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
+            try:
+                output, unused_err = process.communicate(input_string)
+            except:
+                process.kill()
+                process.wait()
+                raise
+            retcode = process.poll()
+            if retcode:
+                raise subprocess.CalledProcessError(retcode, process.args, output=output)
+            # in lower version of python, output is bytes
+            return str(output)
+
+        else:
+            assert False
 
     def computing_call_raw(self, func_name, *args):
         calls = ['computing-call', '--pipe', func_name]
@@ -157,9 +196,9 @@ class DRestfulJsonServices(object):
         # set cookie handler
 
         # first, create an opener than has cookie support.
-        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+        opener = urllib_request.build_opener(urllib_request.HTTPCookieProcessor())
         # then install the opener to request instead of using the default BaseHandler.
-        urllib.request.install_opener(opener)
+        urllib_request.install_opener(opener)
 
     def request(self, directive, params, method):
         """ Make request to Drupal services.
@@ -176,7 +215,7 @@ class DRestfulJsonServices(object):
 
         if method == 'GET':
             if params is not None:
-                query_string = urllib.parse.urlencode(params)
+                query_string = urllib_parse.urlencode(params)
                 link = "%s?%s" % (link, query_string)
 
         elif method == 'POST' or method == 'PUT':
@@ -185,18 +224,25 @@ class DRestfulJsonServices(object):
 
         # process request
         logging.info('Making connection to: %s' % link)
-        headers = {'User-Agent': self.http_user_agent}
+        headers = {'User-Agent': self.http_user_agent, 'Accept': self.http_content_type}
         if data is not None:
             headers['Content-Type'] = self.http_content_type
-            # I assume 'Content-Length' is handled in urllib.request.Request
+            # I assume 'Content-Length' is handled in urllib_request.Request
             # header['Content-Length'] = len(data)
         if self.services_session_token is not None:
             headers['X-CSRF-Token'] = self.services_session_token
 
         logging.debug('Data: %s. Headers: %s. Method: %s' % (str(data), str(headers), method))
-        request = urllib.request.Request(link, data=data, headers=headers, method=method)
+
+        if six.PY3 and sys.version_info[1] >= 3:
+            request = urllib_request.Request(link, data=data, headers=headers, method=method)
+        else:
+            # http://stackoverflow.com/questions/4511598/how-to-make-http-delete-method-using-urllib2
+            request = urllib_request.Request(link, data=data, headers=headers)
+            request.get_method = lambda: method
+
         # this is the actually connection.
-        response = urllib.request.urlopen(request)
+        response = urllib_request.urlopen(request)
 
         raw_content = response.read()
         return json.loads(raw_content.decode('utf-8'))
@@ -215,7 +261,7 @@ class DRestfulJsonServices(object):
 
     def obtain_session_token(self):
         link = "%s/services/session/token" % self.base_url
-        return urllib.request.urlopen(link).read().decode('utf-8')
+        return urllib_request.urlopen(link).read().decode('utf-8')
 
     def user_login(self):
         params = {'username': self.username, 'password': self.password}

@@ -8,4 +8,4 @@ from .utils import load_default_drush, load_default_config, load_default_service
     DConfig, DDrush, DRestfulJsonServices, check_python_version
 
 __author__ = 'Daniel Zhou'
-__version__ = '7.x-2.0-alpha1'
+__version__ = '7.x-2.0-alpha2'

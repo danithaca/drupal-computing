@@ -35,3 +35,6 @@ def simple_script():
 
 if __name__ == '__main__':
     simple_script()
+    # process the list of command request saved in "computing_record" entities.
+    with dcomp.ComputingApplication() as app:
+        app.launch()

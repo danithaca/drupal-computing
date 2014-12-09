@@ -43,7 +43,7 @@ public class DUtils {
     ///////////////////  code begins /////////////////
 
     // TODO: use version defined in MANIFEST?
-    public final String VERSION = "7.x-2.0-alpha1";
+    public final String VERSION = "7.x-2.0-alpha2";
 
     private Logger logger;
     public Logger getPackageLogger() {

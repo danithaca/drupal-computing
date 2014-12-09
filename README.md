@@ -3,12 +3,12 @@ Drupal Computing: Client Library
 
 This is the Java and Python client library for the [Drupal Computing module](http://drupal.org/project/computing) to help you write non-PHP programs, or _agent programs_, that interact with Drupal in a distributed computing environment.
 
-Current release (following the Drupal convention): _7.x-2.0-alpha1_ in _7.x-2.x_ branch.
+Current release (following the Drupal convention): _7.x-2.0-alpha2_ in _7.x-2.x_ branch.
 
 Requirements:
 
   * For the Java client: Java SE 7+, Apache Commons Lang3 (included), Apache Commons Exec (included), Google Gson (included).
-  * For the Python client: Python 3+
+  * For the Python client: Python 3.0+ (Python 3.4 recommended) or Python 2.7+ (Python 2.7 recommended)
 
 
 Technical Features
@@ -149,7 +149,7 @@ Java is a "strong type" language and does not have native support for a flexible
 
 #### Q: Can I use languages other than Java and Python? ####
 
-You can use the Java client to work with JRuby, Groovy, Scala, etc. You can also use Jython 2.x with the Java client for Python 2.x. To use R, you can try rpy2 (for Python/R) or JRI (for Java/R). Native support for other languages are not planned.
+You can use the Java client to work with JRuby, Groovy, Scala, etc. You can also use Jython 2.x with the Java client for Python 2.6 and below. To use R, you can try rpy2 (for Python/R) or JRI (for Java/R). Native support for other languages are not planned.
 
 #### Q: Will this be distributed in Maven and PyPi?
 
