@@ -8,7 +8,7 @@ Current release (following the Drupal convention): _7.x-2.0-alpha2_ in _7.x-2.x_
 Requirements:
 
   * For the Java client: Java SE 7+, Apache Commons Lang3 (included), Apache Commons Exec (included), Google Gson (included).
-  * For the Python client: Python 3.0+ (Python 3.4 recommended) or Python 2.7+ (Python 2.7 recommended)
+  * For the Python client: Python 3.0+ (Python 3.4 recommended) or Python 2.7+ (Python 2.7 recommended), Python Six (https://pypi.python.org/pypi/six)
 
 
 Technical Features
