@@ -70,6 +70,7 @@ Most of these examples are for Python. The Java code would be similar.
 
 Use one-shot script to access Drupal using Drush and Services, and print node/user info:
 
+    ```python
     # code copied from python/dcomp_example.py
     
     # turn on debugging
@@ -100,9 +101,11 @@ Use one-shot script to access Drupal using Drush and Services, and print node/us
     # get drupal variable
     v1 = services.request('system/get_variable.json', {'name': 'install_profile', 'default': 'n/a'}, 'POST')
     print('"install_profile" drupal variable: %s' % v1)
+    ```
 
 Use the "computing record" framework to run agent programs in a systematic way:
 
+    ```python
     # code copied from Drupal's "machine_learning" module.
     # make sure to register command in 'command.properties' file: check_python = CheckPython
     
@@ -136,7 +139,7 @@ Use the "computing record" framework to run agent programs in a systematic way:
           # instead of using "run_once" with a new computing record, you can process computing records already created in Drupal
           # you would normally use this approach is Drupal initiates a computing request with data saved in "input".
           # app.launch()
-
+    ```
 
 FAQ
 ---
