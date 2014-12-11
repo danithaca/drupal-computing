@@ -26,10 +26,12 @@ Install and Config
 
 First, install the [Drupal Computing module](http://drupal.org/project/computing) on your Drupal site. Next, download the Client Library code to the server where you would run the agent programs (usually on a different server than the Drupal server). On that server, setup "CLASSPATH" (for Java) and/or "PYTHONPATH" (for Python) for your agent programs to access the code library, e.g.:
 
-    export DRUPAL_COMPUTING_HOME=/opt/drupal-computing
-    export PYTHONPATH=PYTHONPATH=${PYTHONPATH}:${DRUPAL_COMPUTING_HOME}/python
-    export CLASSPATH=${CLASSPATH}:${DRUPAL_COMPUTING_HOME}/java/computing.jar:${DRUPAL_COMPUTING_HOME}/java/lib/*
-  
+```
+export DRUPAL_COMPUTING_HOME=/opt/drupal-computing
+export PYTHONPATH=PYTHONPATH=${PYTHONPATH}:${DRUPAL_COMPUTING_HOME}/python
+export CLASSPATH=${CLASSPATH}:${DRUPAL_COMPUTING_HOME}/java/computing.jar:${DRUPAL_COMPUTING_HOME}/java/lib/*
+```
+
 _(Note: It is beyond the scope of this documentation if you do dependency management using Maven (for Java) or pip/virtualenv (for Python). Refer to their documentations for details.)_
 
 Finally, create and configure _config.properties_ file to access Drupal. Specify the file's location in system environment variable `DCOMP_CONFIG_FILE`, or save the file to the current working directory. If you prefer not to use this file, you can use environment variables instead (e.g., `dcomp.site.access` would be env var `DCOMP_SITE_ACCESS`).
@@ -70,76 +72,76 @@ Most of these examples are for Python. The Java code would be similar.
 
 Use one-shot script to access Drupal using Drush and Services, and print node/user info:
 
-    ```python
-    # code copied from python/dcomp_example.py
-    
-    # turn on debugging
-    logging.basicConfig(level=logging.DEBUG)
+```python
+# code copied from python/dcomp_example.py
 
-    # requires 'drush alias' in config.properties.
-    drush = dcomp.load_default_drush()
+# turn on debugging
+logging.basicConfig(level=logging.DEBUG)
 
-    # execute any Drupal/PHP functions and get results in JSON.
-    n1 = drush.computing_eval("$nid = 1; return node_load($nid);")
-    print('Node name (using Drush): %s' % n1['title'])
+# requires 'drush alias' in config.properties.
+drush = dcomp.load_default_drush()
 
-    # 'computing_call' is to execute any one drupal function.
-    u1 = drush.computing_call('user_load', 1)
-    print('User name (using Drush): %s' % u1['name'])
+# execute any Drupal/PHP functions and get results in JSON.
+n1 = drush.computing_eval("$nid = 1; return node_load($nid);")
+print('Node name (using Drush): %s' % n1['title'])
 
-    # use services module. access info defined in config.properties.
-    # requires proper Drupal permissions and Services resources to be able to run successfully.
-    # see the Drupal Computing documentation for more details.
-    services = dcomp.load_default_services()
-    services.check_connection()
-    services.user_login()
+# 'computing_call' is to execute any one drupal function.
+u1 = drush.computing_call('user_load', 1)
+print('User name (using Drush): %s' % u1['name'])
 
-    # see the list of things you can do at: https://www.drupal.org/node/783254
-    n2 = services.request('node/1.json', None, 'GET')
-    print('Node name (using Services): %s' % n2['title'])
+# use services module. access info defined in config.properties.
+# requires proper Drupal permissions and Services resources to be able to run successfully.
+# see the Drupal Computing documentation for more details.
+services = dcomp.load_default_services()
+services.check_connection()
+services.user_login()
 
-    # get drupal variable
-    v1 = services.request('system/get_variable.json', {'name': 'install_profile', 'default': 'n/a'}, 'POST')
-    print('"install_profile" drupal variable: %s' % v1)
-    ```
+# see the list of things you can do at: https://www.drupal.org/node/783254
+n2 = services.request('node/1.json', None, 'GET')
+print('Node name (using Services): %s' % n2['title'])
+
+# get drupal variable
+v1 = services.request('system/get_variable.json', {'name': 'install_profile', 'default': 'n/a'}, 'POST')
+print('"install_profile" drupal variable: %s' % v1)
+```
 
 Use the "computing record" framework to run agent programs in a systematic way:
 
-    ```python
-    # code copied from Drupal's "machine_learning" module.
-    # make sure to register command in 'command.properties' file: check_python = CheckPython
+```python
+# code copied from Drupal's "machine_learning" module.
+# make sure to register command in 'command.properties' file: check_python = CheckPython
+
+# then create a new python file check.py:
+
+class CheckPython(DCommand):
+    # overrides execute() to run a command. 
+    def execute(self):
+        # save data in self.result to be saved automatically to Computing Record "output" field
+        # which you can later access in Drupal. 
+        self.result['python'] = {'title': 'Python', 'version': sys.version, 'installed': True}
+
+    # overrides prepare() to handle the parameters from Computing Record "input" field
+    # which is an easy way to feed data from Drupal into agent programs using either Drush or Services.
+    # this particular example doesn't take advantage of this.
+    def prepare(self, params): pass
     
-    # then create a new python file check.py:
+# run application
+if __name__ == '__main__':
+
+    # create a new Computing Record, and specifies to run 'check_python' command
+    # It will map to the "CheckPython" class as defined in command.properties.
+    record = DRecord(application='computing', command='check_python', label='Check Python Libraries')
     
-    class CheckPython(DCommand):
-        # overrides execute() to run a command. 
-        def execute(self):
-            # save data in self.result to be saved automatically to Computing Record "output" field
-            # which you can later access in Drupal. 
-            self.result['python'] = {'title': 'Python', 'version': sys.version, 'installed': True}
+    # use run_once() to execute the command and save result back to Drupal via the use of Computing Record.
+    with ComputingApplication() as app:
     
-        # overrides prepare() to handle the parameters from Computing Record "input" field
-        # which is an easy way to feed data from Drupal into agent programs using either Drush or Services.
-        # this particular example doesn't take advantage of this.
-        def prepare(self, params): pass
-        
-    # run application
-    if __name__ == '__main__':
-    
-        # create a new Computing Record, and specifies to run 'check_python' command
-        # It will map to the "CheckPython" class as defined in command.properties.
-        record = DRecord(application='computing', command='check_python', label='Check Python Libraries')
-        
-        # use run_once() to execute the command and save result back to Drupal via the use of Computing Record.
-        with ComputingApplication() as app:
-        
-          # after 'run_once', you'll see a new Computing Record entity created in Drupal.
-          app.run_once(record)
-          
-          # instead of using "run_once" with a new computing record, you can process computing records already created in Drupal
-          # you would normally use this approach is Drupal initiates a computing request with data saved in "input".
-          # app.launch()
-    ```
+      # after 'run_once', you'll see a new Computing Record entity created in Drupal.
+      app.run_once(record)
+      
+      # instead of using "run_once" with a new computing record, you can process computing records already created in Drupal
+      # you would normally use this approach is Drupal initiates a computing request with data saved in "input".
+      # app.launch()
+```
 
 FAQ
 ---
