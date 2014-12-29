@@ -43,8 +43,8 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>java/src</sourceDirectory>
-        <testSourceDirectory>java/src</testSourceDirectory>
+        <sourceDirectory>src</sourceDirectory>
+        <testSourceDirectory>src</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
